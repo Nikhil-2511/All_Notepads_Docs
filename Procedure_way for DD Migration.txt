@@ -1,0 +1,4 @@
+!. make sure all continers are connected with each other. ( Create a new network ) 
+2. all other machines are connected with base docker-container machine. ( add docker-con-server ip in other machine's SG) 
+3. Write down all servers name with their port no.
+4. 

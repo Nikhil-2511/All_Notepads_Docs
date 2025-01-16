@@ -1,0 +1,31 @@
+MySQL Login: mysql -u root -p 
+Psswd: My@dd#123
+
+
+mysqldump -u root -p mysql > mysql.sql
+
+
+mysql -u root -p mysql < backup mysql.sql
+
+
+
+mysql -u root -p mysql < /home/ubuntu/mysql.sql
+
+
+mysql -u root -p mysql > /home/ubuntu/mysql.sql
+
+
+sudo mysqldump -u root -p done_deal_uat > /home/ubuntu/done_deal_uat.sql
+
+
+
+
+mysql -u root -p done_deal_uat < /MySQL_files/home/ubuntu/done_deal_uat.sql
+
+
+
+sudo mysqldump -u root -p done_deal_uat > /home/ubuntu/done_deal_uat.sql
+
+
+
+mysql -u root -p done_deal_uat < /home/ubuntu/done_deal_uat.sql

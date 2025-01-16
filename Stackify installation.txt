@@ -1,0 +1,43 @@
+1. Stackify Retrace: Supports java, .NET, PHP, Node.js & Python apps.
+
+2. New Relic: Supports java, Node.js Python, Go, PHP, .NET & Ruby.
+
+3. Scout APM: Supports Ruby, Python, Node.js, PHP, Elixir & Phoenix. 
+
+
+Comparison Summary:
+
+* Stackify: Stackify are detailed tracing on SQL queries and application/server log management. It supports Async & .NET Core and detailed code level profiling.
+
+
+*  New Relic provides a setup of real-time instrumentation and analytics.
+
+
+* Scout APM provides detailed insights on performance directly on its dashboard. It identifies slow database queries, N+1 database queries, errors, and memory bloat.
+==>  Scout provides better transaction traces by breaking down memory allocation in addition to timing metrics. Scout APM can easily backtrace slow method calls to identify performance bottlenecks and tie them to source code. 
+     Database Monitoring provides charts to display data across each query (not just the top five expensive queries).
+
+==> Another important feature of Scout is, it’s easy to compare performance in a small slice of time to the normal performance. It also provides an improved development Profiler.
+
+
+
+Here's the link for Scout: https://scoutapm.com/blog/stackify-vs-new-relic-vs-scout
+
+
+
+Scout installation link via Docker: https://docs.docker.com/scout/install/
+
+How to Install STACKIFY on linux:
+
+Installing Retrace
+Here is a script you can copy into your terminal that will download, un-tar, and install the agent all in one step. It is an interactive installer and will ask you for your activation key and environment name.
+
+
+"wget https://s1.stackify.com/Account/AgentDownload/Linux --output-document=stackify.tar.gz && tar -zxvf stackify.tar.gz stackify-agent-install-32bit && cd stackify-agent-install-32bit && sudo ./agent-install.sh"
+
+
+Plain text
+
+When prompted, enter your activation key that can be found within your Retrace account.
+
+Enter your Environment Name when prompted. Your Environment will group your servers and Apps, so be sure to specify something meaningful (Prod, QA, etc).

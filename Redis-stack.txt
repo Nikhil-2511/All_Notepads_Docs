@@ -1,0 +1,43 @@
+Redis Stack installation:
+
+1. sudo apt update
+sudo apt install redis-tools
+sudo snap install --dangerous --classic redisserver.snap
+
+
+r6g 2xlarge
+
+
+
+[Unit]
+Description=Redis Stack Server
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/redis-server /etc/redis/redis-stack.conf
+Restart=always
+User=redis
+Group=redis
+
+[Install]
+WantedBy=multi-user.target
+
+
+[Unit]
+Description=Redis Stack Server
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/redis-server /etc/redis/redis-stack.conf
+Restart=always
+User=redis
+Group=redis
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+
+
+Default port no. 6379

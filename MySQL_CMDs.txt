@@ -1,0 +1,69 @@
+
+
+======================================================CommandsForMySQL====================================================================
+
+*How to login via CommandLine:
+
+CMD:          mysql -u root -p { Use UserName insted of root, if you have }
+Password :-   Nikhil123
+
+
+*How to check list of all databases:
+CMD:  show databases;
+
+
+*How to create Database: 
+CMD: CREATE DATABASE {database_name};
+
+
+*How to use that perticular database:
+
+CMD:  USE database {database_name};
+
+
+*How to create table:
+
+CMD:     create table t1 (id int);
+
+
+*How to check list of all tables:
+CMD:  show tables;
+
+
+* How to insert value inside table:
+CMD:  insert into t1 values (1);
+
+*How to check table content:
+CMD:   SELECT * FROM t1;
+
+
+*How to take backup in mysql{CLI}:
+CMD: mysqldump -u root -p "databasename" >  D:\MYSQLBACKUP\'filename.sql'
+
+*How to Restore Backup in mysql{CLI}:
+CMD: mysql -u root -p newdatabasename < D:\MYSQLBACKUP\'filename.sql' {Before performing restoration, Create a new database first}
+ 
+
+*How to take backup in mysql{ linux }:
+mysql -u root -p 'database_name' > /home/ubuntu/'filename.sql'
+
+*How to check table count:
+select count(1) from 'table_name';
+
+*How to check database size:
+SELECT table_schema "DB Name", ROUND(SUM(data_length + index_length) / 1024 / 1024, 1) "DB Size in MB"
+    FROM information_schema.tables
+    GROUP BY table_schema;   
+
+
+* How to check table size and Table rows:
+SELECT
+    table_schema AS database_name,
+    table_name,
+    ROUND((data_length + index_length) / 1024 / 1024, 2) AS table_size_mb,
+    table_rows
+FROM
+    information_schema.tables
+ORDER BY
+    (data_length + index_length) DESC
+LIMIT 10;

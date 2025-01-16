@@ -1,0 +1,175 @@
+===============Modified query for 163 Columns==============================================
+
+SELECT DISTINCT 
+    ro_mapping.ro AS "RO",
+    SUBSTRING("lms_portfolio_data"."AGREEMENT NO" FROM 6 FOR 2) AS "Region",
+    "lms_portfolio_data"."BRANCH NAME" AS "Branch",
+    "lms_portfolio_data"."APPLICATION NUMBER" AS "Application no",
+    "lms_portfolio_data"."AGREEMENT NO" AS "Loan Account Number",
+    "lms_portfolio_data"."CUSTOMER NAME" AS "Customer Name",
+    "lms_portfolio_data"."CUSTOMER MOBILE NO" AS "Contact Number",
+    ROUND("customer_score"."Customer score") AS "customerscore",
+    portfolio_extract_as_on_1."DAYS PAST DUE",
+    (portfolio_extract_as_on_1."DAYS PAST DUE" + 4) / 30 AS "Del_String",
+
+    CASE 
+        WHEN coalesce("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT",0) = 0 AND "death_stock_legal"."Status" = 'CD' THEN 'X - BKT'
+        WHEN "xyz_bkt"."as_of_date_xyz" > 0 AND "xyz_bkt"."xyz_bkt_flag" = 'X' THEN 'Y'
+        WHEN "xyz_bkt"."as_of_date_xyz" > 0 AND "xyz_bkt"."xyz_bkt_flag" = 'Y' THEN 'Z'
+        ELSE '-' 
+    END AS "XYZ BKT Flag",
+
+    CASE 
+        WHEN coalesce("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT",0) = 0 AND "death_stock_legal"."Status" = 'CD' THEN "billing_pending"."INSTALLMENT_AMOUNT"
+        WHEN "xyz_bkt"."as_of_date_xyz" > 0 AND "xyz_bkt"."xyz_bkt_flag" = 'X-Bucket' THEN "xyz_bkt"."as_of_date_xyz"
+        WHEN "xyz_bkt"."as_of_date_xyz" > 0 AND "xyz_bkt"."xyz_bkt_flag" = 'Y-Bucket' THEN "xyz_bkt"."as_of_date_xyz"
+        ELSE 0 
+    END AS "XYZ Opening",
+
+    -- Example of fixing a subquery issue
+    (SELECT coalesce(SUM("INSTRUMENT_AMOUNT"), 0) 
+       FROM receipt_pending_action 
+       WHERE "LOAN_ACCOUNT_NUMBER" = "lms_portfolio_data"."AGREEMENT NO" AND "PAYMENT_MODE" = 'ASHCASHCAS' 
+       LIMIT 1) AS "Receipt Report_Cash",
+
+    (SELECT coalesce(SUM("INSTRUMENT_AMOUNT"), 0) 
+       FROM receipt_pending_action 
+       WHERE "LOAN_ACCOUNT_NUMBER" = "lms_portfolio_data"."AGREEMENT NO" AND "PAYMENT_MODE" = 'QUECHEQUECHE' 
+       LIMIT 1) AS "Receipt Report_Cheque",
+
+    (SELECT coalesce(SUM("INSTRUMENT_AMOUNT"), 0) 
+       FROM receipt_pending_action 
+       WHERE "LOAN_ACCOUNT_NUMBER" = "lms_portfolio_data"."AGREEMENT NO" AND "PAYMENT_MODE" = 'electronic fund transfer' 
+       LIMIT 1) AS "Receipt Report_RTGS",
+
+    -- Example for adjusting subquery to return one row
+    (SELECT coalesce(SUM("Amount Allocated"), 0) 
+       FROM collection_charge_allocation 
+       WHERE "Loan Account" = "lms_portfolio_data"."AGREEMENT NO" AND "Charge Code" = 8 
+       LIMIT 1) AS "CBC Received",
+
+    "portfolio_extract_t1"."PRODUCT NAME" AS "Product"
+
+INTO dataset
+FROM lms_portfolio_data 
+LEFT JOIN ro_mapping
+    ON "lms_portfolio_data"."BRANCH NAME" = ro_mapping.branch_name
+LEFT JOIN customer_score
+    ON customer_score."Agreement no." = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN portfolio_extract_as_on_1
+    ON portfolio_extract_as_on_1."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN portfolio_extract_t1
+    ON portfolio_extract_t1."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN death_stock_legal
+    ON "death_stock_legal"."LoanAccountNumber" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN billing_pending
+    ON "billing_pending"."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN nach_presentation 
+    ON "nach_presentation"."Loan Account NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN nach_status
+    ON "nach_status"."Unique Reference Number" = "lms_portfolio_data"."APPLICATION NUMBER"
+LEFT JOIN field_mapping
+    ON "field_mapping"."Loan Acount NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN co_applicant_data
+    ON "co_applicant_data"."LOAN_ACCOUNT_NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN gurrantor_data
+    ON "gurrantor_data"."LOAN_ACCOUNT_NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN fe_pdc_data
+    ON "fe_pdc_data"."Loan Number" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN case_status
+    ON "case_status"."Loan Acount NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN xyz_bkt
+    ON "xyz_bkt"."loan_account_number" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN portfolio_extract_as_on_5
+    ON portfolio_extract_as_on_5."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN bounce_count_data
+    ON bounce_count_data."Loan Account Number" = "lms_portfolio_data"."AGREEMENT NO";
+
+
+
+==========================Query with CTEs===========================================================================================
+
+
+WITH base_data AS (
+    SELECT DISTINCT 
+        ro_mapping.ro AS "RO",
+        SUBSTRING("lms_portfolio_data"."AGREEMENT NO" FROM 6 FOR 2) AS "Region",
+        "lms_portfolio_data"."BRANCH NAME" AS "Branch",
+        "lms_portfolio_data"."APPLICATION NUMBER" AS "Application no",
+        "lms_portfolio_data"."AGREEMENT NO" AS "Loan Account Number",
+        "lms_portfolio_data"."CUSTOMER NAME" AS "Customer Name",
+        "lms_portfolio_data"."CUSTOMER MOBILE NO" AS "Contact Number",
+        ROUND("customer_score"."Customer score") AS "customerscore",
+        portfolio_extract_as_on_1."DAYS PAST DUE",
+        (portfolio_extract_as_on_1."DAYS PAST DUE" + 4) / 30 AS "Del_String",
+
+        CASE 
+            WHEN coalesce("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT",0) = 0 AND "death_stock_legal"."Status" = 'CD' THEN 'X - BKT'
+            WHEN "xyz_bkt"."as_of_date_xyz" > 0 AND "xyz_bkt"."xyz_bkt_flag" = 'X' THEN 'Y'
+            WHEN "xyz_bkt"."as_of_date_xyz" > 0 AND "xyz_bkt"."xyz_bkt_flag" = 'Y' THEN 'Z'
+            ELSE '-' 
+        END AS "XYZ BKT Flag",
+
+        CASE 
+            WHEN coalesce("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT",0) = 0 AND "death_stock_legal"."Status" = 'CD' THEN "billing_pending"."INSTALLMENT_AMOUNT"
+            WHEN "xyz_bkt"."as_of_date_xyz" > 0 AND "xyz_bkt"."xyz_bkt_flag" = 'X-Bucket' THEN "xyz_bkt"."as_of_date_xyz"
+            WHEN "xyz_bkt"."as_of_date_xyz" > 0 AND "xyz_bkt"."xyz_bkt_flag" = 'Y-Bucket' THEN "xyz_bkt"."as_of_date_xyz"
+            ELSE 0 
+        END AS "XYZ Opening",
+
+        -- Summarized subqueries for better performance
+        (SELECT coalesce(SUM("INSTRUMENT_AMOUNT"), 0) 
+           FROM receipt_pending_action 
+           WHERE "LOAN_ACCOUNT_NUMBER" = "lms_portfolio_data"."AGREEMENT NO" AND "PAYMENT_MODE" = 'ASHCASHCAS') AS "Receipt Report_Cash",
+
+        (SELECT coalesce(SUM("INSTRUMENT_AMOUNT"), 0) 
+           FROM receipt_pending_action 
+           WHERE "LOAN_ACCOUNT_NUMBER" = "lms_portfolio_data"."AGREEMENT NO" AND "PAYMENT_MODE" = 'QUECHEQUECHE') AS "Receipt Report_Cheque",
+
+        (SELECT coalesce(SUM("INSTRUMENT_AMOUNT"), 0) 
+           FROM receipt_pending_action 
+           WHERE "LOAN_ACCOUNT_NUMBER" = "lms_portfolio_data"."AGREEMENT NO" AND "PAYMENT_MODE" = 'electronic fund transfer') AS "Receipt Report_RTGS",
+
+        (SELECT coalesce(SUM("Amount Allocated"), 0) 
+           FROM collection_charge_allocation 
+           WHERE "Loan Account" = "lms_portfolio_data"."AGREEMENT NO" AND "Charge Code" = 8) AS "CBC Received",
+
+        "portfolio_extract_t1"."PRODUCT NAME" AS "Product"
+    FROM lms_portfolio_data 
+    LEFT JOIN ro_mapping
+        ON "lms_portfolio_data"."BRANCH NAME" = ro_mapping.branch_name
+    LEFT JOIN customer_score
+        ON customer_score."Agreement no." = "lms_portfolio_data"."AGREEMENT NO"
+    LEFT JOIN portfolio_extract_as_on_1
+        ON portfolio_extract_as_on_1."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+    LEFT JOIN portfolio_extract_t1
+        ON portfolio_extract_t1."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+    LEFT JOIN death_stock_legal
+        ON "death_stock_legal"."LoanAccountNumber" = "lms_portfolio_data"."AGREEMENT NO"
+    LEFT JOIN billing_pending
+        ON "billing_pending"."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+    LEFT JOIN nach_presentation 
+        ON "nach_presentation"."Loan Account NO" = "lms_portfolio_data"."AGREEMENT NO"
+    LEFT JOIN nach_status
+        ON "nach_status"."Unique Reference Number" = "lms_portfolio_data"."APPLICATION NUMBER"
+    LEFT JOIN field_mapping
+        ON "field_mapping"."Loan Acount NO" = "lms_portfolio_data"."AGREEMENT NO"
+    LEFT JOIN co_applicant_data
+        ON "co_applicant_data"."LOAN_ACCOUNT_NO" = "lms_portfolio_data"."AGREEMENT NO"
+    LEFT JOIN gurrantor_data
+        ON "gurrantor_data"."LOAN_ACCOUNT_NO" = "lms_portfolio_data"."AGREEMENT NO"
+    LEFT JOIN fe_pdc_data
+        ON "fe_pdc_data"."Loan Number" = "lms_portfolio_data"."AGREEMENT NO"
+    LEFT JOIN case_status
+        ON "case_status"."Loan Acount NO" = "lms_portfolio_data"."AGREEMENT NO"
+    LEFT JOIN xyz_bkt
+        ON "xyz_bkt"."loan_account_number" = "lms_portfolio_data"."AGREEMENT NO"
+    LEFT JOIN portfolio_extract_as_on_5
+        ON portfolio_extract_as_on_5."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+    LEFT JOIN bounce_count_data
+        ON bounce_count_data."Loan Account Number" = "lms_portfolio_data"."AGREEMENT NO"
+)
+SELECT *
+FROM base_data
+LIMIT 100;
+

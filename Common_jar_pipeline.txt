@@ -1,0 +1,106 @@
+def now = new Date()
+string rm_backup = 'rm -rf /home/ubuntu/buildbackup/*'
+string mv1_code = 'mv /home/ubuntu/done-deal-common-1.0.0.jar /home/ubuntu/buildbackup/done-deal-common-1.0.0_' + now.format("yyMMdd_HHmm", TimeZone.getTimeZone('UTC')) + ".jar"
+string mv2_code = 'mv /home/ubuntu/latest_build/done-deal-common-1.0.0.jar /home/ubuntu/.'
+string pid = '/home/ubuntu/jenkins_script/stop_processJa.sh'
+string docker_container = 'CommonJar-con5'
+string docker_path = '/home/ubuntu'
+string docker_path2 = '/home/ubuntu/jenkins_script'
+
+pipeline {
+    agent any
+    tools {
+        maven "maven3"
+        jdk "JDK"
+    }
+
+    stages {
+        stage("Clone the Code") {
+            steps {
+                script {
+                    def selectedOption = env.Git_Repo
+                    def branch_name = selectedOption - "refs/heads/"
+                    echo branch_name
+                    echo "Selected option: ${branch_name}"
+                    git branch: branch_name, credentialsId: 'clone_code', url: 'https://github.com/thedonedeal/company'
+                }
+            }
+        }
+
+        stage("Build") {
+            steps {
+                sh 'mvn clean install -DskipTests'
+            }
+        }
+
+        stage("Copy the Code from Jenkins Server to Apps Server") {
+            steps {
+                echo "Copying the code from Jenkins server to Apps server"
+                sh "scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem /var/lib/jenkins/workspace/backend_pipeline-buyer/done-deal-common/target/done-deal-common-1.0.0.jar ubuntu@172.31.39.246:/home/ubuntu/latest_build"
+            }
+        }
+
+        stage("Killing the Process") {
+            steps {
+                script {
+                    sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 '${pid}'"
+                }
+            }
+        }
+
+        stage("Remove Older Files") {
+            steps {
+                script {
+                    sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 '${rm_backup}'"
+                }
+            }
+        }
+
+        stage("Moving the Old Code") {
+            steps {
+                script {
+                    sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 '${mv1_code}'"
+                }
+            }
+        }
+
+        stage("Moving the Latest Code") {
+            steps {
+                script {
+                    sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 '${mv2_code}'"
+                }
+            }
+        }
+
+        stage("Copy to Docker Container") {
+            steps {
+                script {
+                    echo "Copying the latest code to Docker container"
+                    sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 docker cp /home/ubuntu/latest_build/done-deal-common-1.0.0.jar ${docker_container}:${docker_path}/"
+                }
+            }
+        }
+
+        stage("Restart Docker Container") {
+            steps {
+                script {
+                    echo "Restarting Docker container"
+                    sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 docker restart ${docker_container}"
+                }
+            }
+        }
+
+        stage("Running the Process") {
+            steps {
+                script {
+                    sh """
+                        ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 \
+                        docker exec -d ${docker_container} java -jar -Dspring.datasource.url=jdbc:mysql://172.31.46.147/done_deal_uat \
+                        -Dspring.datasource.username=ddqa -Dspring.datasource.password=ddqa@123 \
+                        -Dspring.profiles.active=qa /jar_files1/ubuntu/done-deal-common-1.0.0.jar &> /dev/null &
+                    """
+                }
+            }
+        }
+    }
+}

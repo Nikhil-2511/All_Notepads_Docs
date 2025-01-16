@@ -1,0 +1,100 @@
+CREATE INDEX idx_portfolio_loan_no ON portfolio_extract_as_on_1 ("LOAN ACCOUNT NO");
+CREATE INDEX idx_portfolio_t1_loan_no ON portfolio_extract_t1 ("LOAN ACCOUNT NO");
+CREATE INDEX idx_billing_loan_no ON billing_pending ("LOAN ACCOUNT NO");
+CREATE INDEX idx_nach_present_unique_ref ON nach_status ("Unique Reference Number");
+CREATE INDEX idx_case_status_loan_no ON case_status ("Loan Acount NO");
+CREATE INDEX idx_xyz_bkt_loan_no ON xyz_bkt ("loan_account_number");
+CREATE INDEX idx_bounce_count_loan_no ON bounce_count_data ("Loan Account Number");
+CREATE INDEX idx_receipt_pending_action_loan_payment_mode ON receipt_pending_action ("LOAN_ACCOUNT_NUMBER", "PAYMENT_MODE");
+CREATE INDEX idx_lms_portfolio_agreement_no ON lms_portfolio_data ("AGREEMENT NO");
+CREATE INDEX idx_ro_mapping_branch_name ON ro_mapping (branch_name);
+CREATE INDEX idx_customer_score_agreement_no ON customer_score ("Agreement no.");
+CREATE INDEX idx_death_stock_loan_no ON death_stock_legal ("LoanAccountNumber");
+CREATE INDEX idx_field_mapping_loan_no ON field_mapping ("Loan Acount NO");
+CREATE INDEX idx_co_applicant_loan_no ON co_applicant_data ("LOAN_ACCOUNT_NO");
+CREATE INDEX idx_gurrantor_loan_no ON gurrantor_data ("LOAN_ACCOUNT_NO");
+CREATE INDEX idx_fe_pdc_loan_no ON fe_pdc_data ("Loan Number");
+
+
+
+====================================================19_DEC_2024================================================================================
+
+-- Indexes for lms_portfolio_data
+CREATE INDEX idx_lms_agreement_no ON lms_portfolio_data("AGREEMENT NO");
+CREATE INDEX idx_lms_branch_name ON lms_portfolio_data("BRANCH NAME");
+CREATE INDEX idx_lms_application_number ON lms_portfolio_data("APPLICATION NUMBER");
+CREATE INDEX idx_lms_disbursal_last_date ON lms_portfolio_data("DISBURSAL LAST DATE");
+CREATE INDEX idx_lms_first_instalment_date ON lms_portfolio_data("FIRST INSTALMENT DATE");
+
+-- Indexes for ro_mapping
+CREATE INDEX idx_ro_branch_name ON ro_mapping(branch_name);
+
+-- Indexes for customer_score
+CREATE INDEX idx_customer_score_agreement_no ON customer_score("Agreement no.");
+
+-- Indexes for portfolio_extract_as_on_1
+CREATE INDEX idx_portfolio_extract_as_on_1_loan_account_no ON portfolio_extract_as_on_1("LOAN ACCOUNT NO");
+
+-- Indexes for portfolio_extract_t1
+CREATE INDEX idx_portfolio_extract_t1_loan_account_no ON portfolio_extract_t1("LOAN ACCOUNT NO");
+
+-- Indexes for death_stock_legal
+CREATE INDEX idx_death_stock_legal_loan_account_number ON death_stock_legal("LoanAccountNumber");
+
+-- Indexes for billing_pending
+CREATE INDEX idx_billing_pending_loan_account_no ON billing_pending("LOAN ACCOUNT NO");
+
+-- Indexes for nach_presentation
+CREATE INDEX idx_nach_presentation_loan_account_no ON nach_presentation("Loan Account NO");
+
+-- Indexes for nach_status
+CREATE INDEX idx_nach_status_unique_reference_number ON nach_status("Unique Reference Number");
+
+-- Indexes for field_mapping
+CREATE INDEX idx_field_mapping_loan_account_no ON field_mapping("Loan Acount NO");
+
+-- Indexes for co_applicant_data
+CREATE INDEX idx_co_applicant_data_loan_account_no ON co_applicant_data("LOAN_ACCOUNT_NO");
+
+-- Indexes for gurrantor_data
+CREATE INDEX idx_gurrantor_data_loan_account_no ON gurrantor_data("LOAN_ACCOUNT_NO");
+
+-- Indexes for fe_pdc_data
+CREATE INDEX idx_fe_pdc_data_loan_number ON fe_pdc_data("Loan Number");
+
+-- Indexes for case_status
+CREATE INDEX idx_case_status_loan_account_no ON case_status("Loan Acount NO");
+
+-- Indexes for xyz_bkt
+CREATE INDEX idx_xyz_bkt_loan_account_number ON xyz_bkt("loan_account_number");
+
+-- Indexes for portfolio_extract_as_on_5
+CREATE INDEX idx_portfolio_extract_as_on_5_loan_account_no ON portfolio_extract_as_on_5("LOAN ACCOUNT NO");
+
+-- Indexes for bounce_count_data
+CREATE INDEX idx_bounce_count_data_loan_account_number ON bounce_count_data("Loan Account Number");
+
+-- Indexes for receipt_pending_action
+CREATE INDEX idx_receipt_pending_action_loan_account_number ON receipt_pending_action("LOAN_ACCOUNT_NUMBER");
+CREATE INDEX idx_receipt_pending_action_payment_mode ON receipt_pending_action("PAYMENT_MODE");
+
+-- Indexes for collection_charge_allocation
+CREATE INDEX idx_collection_charge_allocation_loan_account ON collection_charge_allocation("Loan Account");
+CREATE INDEX idx_collection_charge_allocation_charge_code ON collection_charge_allocation("Charge Code");
+
+-- Indexes for lpi_data
+CREATE INDEX idx_lpi_data_loan_account_no ON lpi_data("Loan Account #");
+
+-- Indexes for loan_receipt_details
+CREATE INDEX idx_loan_receipt_details_loan_account_no ON loan_receipt_details("Loan Account No");
+CREATE INDEX idx_loan_receipt_details_authorization_date ON loan_receipt_details("Authorization Date");
+
+-- Indexes for mapping_johari_data
+CREATE INDEX idx_mapping_johari_data_sro_cro_code ON mapping_johari_data("SRO/CRO CODE");
+
+
+==========================================================================================================
+
+On 21 Dec 24:
+
+116 column are made on datacheck. 

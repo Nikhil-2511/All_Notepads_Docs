@@ -1,0 +1,16 @@
+===========================Steps to access PostgreSQL on jump server=====================================================
+1. Connect VPN (Credentials alredy shared)
+2. Then Open Radmin and connect to the server
+3. Open putty and add host ip: 10.10.7.210, 
+    ====> UserName: bitsiantech
+    ====> Password: Bitsiantech@@456
+
+To access pods:
+* First check wheather pods are running or not, if not then run this command: { Check from this cmd: oc get po }:
+===> oc login https://api.rosakfprod.ke56.p1.openshiftapps.com:6443 --username bitsiantech --password Bitsiantech479
+
+* To access pod, run this command:
+==> oc exec -it <POD_NAME> -- /bin/bash
+
+To access Postgres inside pod, run this command:
+===>  psql postgresql://superset:superset@superset-postgres:5432/superset

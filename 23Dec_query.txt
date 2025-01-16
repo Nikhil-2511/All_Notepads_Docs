@@ -1,0 +1,68 @@
+SELECT
+    datacheck1.*,
+    CASE 
+        WHEN "Collection Date" IS NOT NULL THEN
+            CASE 
+                WHEN "Final NACH Status" = 'Nach Clear' AND "Pending" = 0 THEN
+                    CASE 
+                        WHEN "Opening collectable" = "NACH Amount" THEN 'Nach Clear'
+                        ELSE 'Nach Clear Short Amount'
+                    END
+                WHEN "Final NACH Status" = 'Nach Bounce' AND "Pending" = 0 THEN 'Nach Bounce filed collection'
+                WHEN "Final NACH Status" = '-' AND "Pending" = 0 THEN 'Filed Collection'
+                ELSE NULL 
+            END
+        ELSE '-'
+    END AS "Collection Status",
+    CASE 
+        WHEN "Payment Mode" LIKE '%nach%' THEN
+            CASE 
+                WHEN "Opening DPD" BETWEEN 0 AND 90 THEN '<90'
+                WHEN "Opening DPD" BETWEEN 91 AND 180 THEN '91-180'
+                WHEN "Opening DPD" BETWEEN 181 AND 240 THEN '181-240'
+                ELSE '240+'
+            END
+        ELSE NULL 
+    END AS "DPD Buckting",
+    "lms_portfolio_data"."ASSET MODEL" AS "ASSET MODEL",
+    "lms_portfolio_data"."REGISTRATION NUMBER" AS "REGISTRATION NUMBER",
+    "lms_portfolio_data"."CHASIS NUMBER" AS "CHASIS NUMBER",
+    "lms_portfolio_data"."DISBURSED AMOUNT" AS "Disbursal Amount",
+    "lms_portfolio_data"."DISBURSAL LAST DATE" AS "DISBURSAL DATE",
+    "lms_portfolio_data"."FIRST INSTALMENT DATE" AS "First installment date",
+    "lms_portfolio_data"."TENURE" AS "Tenure",
+    "lms_portfolio_data"."ADDRESS" AS "Address",
+    "lms_portfolio_data"."ZIPCODE" AS "Pin Code",
+    "lms_portfolio_data"."REFERENCE NAME1" AS "Referance1",
+    "lms_portfolio_data"."REFERENCE PHONE NO1" AS "Ref 1 Mobile No.",
+    "lms_portfolio_data"."REFERENCE NAME2" AS "Referance2",
+    "lms_portfolio_data"."REFERENCE PHONE NO2" AS "Ref 2 Mobile No.",
+ 
+    "co_applicant_data"."CUSTOMER_NAME" AS "Co Applicant",
+    "co_applicant_data"."CUSTOMER_NUMBER" AS "Mobile number",
+    "co_applicant_data"."ADDRESS" AS "Address3",
+ 
+    "gurrantor_data"."CUSTOMER_NAME" AS "Gurantor",
+    "gurrantor_data"."PHONE_NUMBER" AS "Mobile number4",
+    "gurrantor_data"."ADDRESS" AS "Address5"
+ 
+FROM 
+    datacheck1 
+LEFT JOIN 
+    "lms_portfolio_data" ON "Loan Account Number" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN co_applicant_data
+    ON "co_applicant_data"."LOAN_ACCOUNT_NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN gurrantor_data
+    ON "gurrantor_data"."LOAN_ACCOUNT_NO" = "lms_portfolio_data"."AGREEMENT NO";
+
+
+
+superset=# select "CUSTOMER_NAME","PHONE_NUMBER","ADDRESS" from co_applicant_data where  "LOAN_ACCOUNT_NO" = 'IPMP15IPLO000005158145';
+    CUSTOMER_NAME    | PHONE_NUMBER |             ADDRESS
+---------------------+--------------+---------------------------------
+ KUSUMARAANEE GUDDAA |   9981700115 | H NO 35 ATHAI BHURI DAMOH DAMOG
+ KUSUMARAANEE GUDDAA |   9981700115 | H NO 35 ATHAI BHURI DAMOH DAMOG
+ KUSUMARAANEE GUDDAA |   9981700115 | 35 ATHAI BHURI DAMOH DAMOH
+ KUSUMARAANEE GUDDAA |   9981700115 | 35 ATHAI BHURI DAMOH DAMOH
+
+

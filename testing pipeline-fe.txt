@@ -1,0 +1,121 @@
+string stop = '/home/ubuntu/jenkins_script/stop.fronted_process.sh'
+string rm_backup = 'rm -rf /home/ubuntu/buildbackup/*'
+string mv_code = 'mv /home/ubuntu/fe-app/donedeal-web /home/ubuntu/buildbackup/ ; mv /home/ubuntu/fe-app/frontend_pipeline/ /home/ubuntu/fe-app/donedeal-web'
+string install_npm = 'cd /home/ubuntu/fe-app/donedeal-web ; npm install'
+string build_cmd = 'cd /home/ubuntu/fe-app/donedeal-web && npm run build'
+string cp_code='cp -arf /home/ubuntu/buildbackup/donedeal-web/node_modules/ /home/ubuntu/fe-app/donedeal-web/'
+string docker_container = 'fe-con2' // Replace with your actual container name
+string docker_path = '/dockertest4/ubuntu/fe-app/'// Change this to the path where your website files should go inside the container
+string docker_path2 = '/dockertest4/ubuntu/fe-app/donedeal-web/'
+
+pipeline {
+    agent any
+
+    stages {
+      stage("clone the code") { 
+            steps {
+                script {
+                    def selectedOption = env.Git_Repo
+                    def branch_name = selectedOption - "refs/heads/"
+                    echo branch_name
+                    echo "Selected option: ${branch_name}"
+                    git branch: branch_name, credentialsId: 'clone_code', url: 'https://github.com/thedonedeal/donedeal-web'
+                }
+            }
+        }
+
+        stage("stop the process") {
+            steps {
+                script {
+                    sh "scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem /var/lib/jenkins/workspace/stop.fronted_process.sh ubuntu@172.31.43.73:/home/ubuntu/jenkins_script/"
+                    sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.43.73 /bin/bash -c '\"${stop}\"'"
+                }
+            }
+        }
+
+        stage("remove the older file from buildbackup") {
+            steps {
+                sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.43.73 /bin/bash -c '\"${rm_backup}\"'"
+            }
+        }
+
+        stage("copy the code from jenkins server to Apps server") {
+            steps {
+                echo "copy the code from one server to other server"
+                sh "scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem /var/lib/jenkins/workspace/frontend_pipeline ubuntu@172.31.43.73:/home/ubuntu/fe-app/."
+            }
+        }
+
+        stage("moving the old code") {
+            steps {
+                sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.43.73 /bin/bash -c '\"${mv_code}\"'"
+            }
+        }
+        stage("Copy build to Docker container") {
+            steps {
+                script {
+                    echo "Copying build files to Docker container"
+                    sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.43.73 sudo docker cp /home/ubuntu/fe-app/donedeal-web ${docker_container}:${docker_path}"
+                }
+            }
+        }
+
+        stage("install npm") {
+            steps {
+                script {
+                    def OptionButton = env.Install_Npm
+                    echo "Selected button: ${OptionButton}"
+                    if (OptionButton == 'Yes') {
+                        echo "Installing Npm"
+                        sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.43.73 /bin/bash -c '\"${install_npm}\"'"
+                    } else {
+                        echo "Node modules copy from old code"
+                        sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.43.73  /bin/bash -c '\"${cp_code}\"'"
+                        sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.43.73 sudo docker cp /home/ubuntu/fe-app/donedeal-web/node_modules/ fe-con2:/dockertest4/ubuntu/fe-app/donedeal-web/"
+                        //sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.43.73 sudo docker cp r /home/ubuntu/fe-app/donedeal-web/node_modules/ ${docker_container}:${docker_path2}/" 
+                    }
+                }
+            }
+        }
+
+        /*stage("NPM Run Build") {
+            steps {
+                script {
+                    sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.43.73 /bin/bash -c '\"${build_cmd}\"'"
+                }
+            }
+        }*/
+
+        stage("Restart Docker container") {
+            steps {
+                script {
+                    echo "Restarting Docker container"
+                    sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.43.73 docker restart ${docker_container}"
+                }
+            }
+        }
+        
+        
+        stage("Start process") {
+            steps {
+                script {
+                    echo "starting process"
+                    sh '''ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.43.73 "docker exec fe-con2 bash -c 'cd /dockertest4/ubuntu/fe-app/donedeal-web && pm2 start npm --name qa-fe-app -- start'"'''
+                }
+            }
+        }
+        /*stage("Start process") {
+            steps {
+                script {
+                    echo "starting process"
+                    sh '''ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.43.73 "docker exec fe-con2 bash -c 'cd /dockertest4/ubuntu/fe-app/donedeal-web &&  ; pm2 start server.js --name qa-fe-app'"'''
+                }
+            }
+        }*/
+       stage("remove the data from buildbackup") {
+            steps {
+                sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.43.73 /bin/bash -c '\"${rm_backup}\"'"
+            }
+        }
+    }
+}

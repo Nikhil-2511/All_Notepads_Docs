@@ -1,0 +1,344 @@
+step1- create table ddeals as SELECT * from prod_db.deal where 1=0;
+
+step2-write procedure--
+
+DELIMITER //
+CREATE PROCEDURE refresh_mv_mandate_view()
+BEGIN
+    -- Clear existing data in the materialized view table
+    TRUNCATE TABLE  mandate_view;
+    -- Insert new data into the materialized view table
+    INSERT INTO  mandate_view (id,uid,buyer_id,name,description,dealmaker,ebidta,operational,others,revenue_max_value,revenue_min_value,targets,operation_max_value,operation_min_value,status,created_at,created_by,updated_at,updated_by,created_by_id,updated_by_id,deal_construct,deal_size_max_value,deal_size_min_value,link_created,link_title,link_description,link_tags,link_image_path,buyer_member_id,last_refresh)
+    select id,uid,buyer_id,name,description,dealmaker,ebidta,operational,others,revenue_max_value,revenue_min_value,targets,operation_max_value,operation_min_value,status,created_at,created_by,updated_at,updated_by,created_by_id,updated_by_id,deal_construct,deal_size_max_value,deal_size_min_value,link_created,link_title,link_description,link_tags,link_image_path,buyer_member_id,now() from prod_db.mandate;
+END //
+DELIMITER ;
+
+step3-write event--
+
+CREATE EVENT mandate_view_mv_refresh
+ON SCHEDULE EVERY 1 DAY
+STARTS '2024-09-28 00:00:00'
+DO
+  call refresh_mv_mandate_view;
+
+
+-----------------------------
+
+drop table deals;
+
+create table deals as SELECT * from prod_db.deal where 1=0;
+
+alter table deals add last_refresh datetime;
+
+
+SELECT ROUTINE_TYPE, ROUTINE_NAME
+    FROM INFORMATION_SCHEMA.ROUTINES
+    WHERE ROUTINE_SCHEMA='prod_db_report';
+
+
+spname:- refresh_mv_deals     refresh_mv_deals  
+
+drop procedure [if exists] refresh_mv_deals;
+
+DELIMITER //
+CREATE PROCEDURE refresh_mv_deals()
+BEGIN
+    -- Clear existing data in the materialized view table
+    TRUNCATE TABLE deals;
+    -- Insert new data into the materialized view table
+    INSERT INTO  deals (id, buyer_id, seller_id,priority,offer_value,status,buy_owner ,sell_owner,deal_maker,interaction_notes,activity_log,created_at,updated_at,
+                        created_by,updated_by,created_by_id,updated_by_id,objective,initiator_id,shortlisted,pre_hold_status,sub_status,waiting_on,starred,action_source,
+                        status_updated_at,highly_relevant,viewed_details,last_refresh)
+    select id, buyer_id, seller_id,priority,offer_value,status,buy_owner ,sell_owner,deal_maker,interaction_notes,activity_log,created_at,updated_at,
+    created_by,updated_by,created_by_id,updated_by_id,objective,initiator_id,shortlisted,pre_hold_status,sub_status,waiting_on,starred,action_source,
+    status_updated_at,highly_relevant,viewed_details,now() from prod_db.deal;
+END //
+DELIMITER;
+
+CALL refresh_mv_deals()  
+
+call refresh_mv_deals();
+
+SELECT * FROM INFORMATION_SCHEMA.EVENTS WHERE EVENT_SCHEMA = 'prod_db_report';
+
+id, buyer_id, seller_id,priority,offer_value,status,buy_owner ,sell_owner,deal_maker,interaction_notes,activity_log,created_at,updated_at,
+created_by,updated_by,created_by_id,updated_by_id,objective,initiator_id,shortlisted,pre_hold_status,sub_status,waiting_on,starred,action_source,
+status_updated_at,highly_relevant,viewed_details,last_refresh
+
+
+show events information_schema.events;
+
+SELECT ROUTINE_NAME, ROUTINE_TYPE, CREATE_TIME
+FROM information_schema.ROUTINES
+WHERE ROUTINE_SCHEMA = 'db_'
+  AND ROUTINE_NAME = 'my_procedure';
+
+
+========================================
+
+drop table company_view;
+
+create table company_view as select * from prod_db.company where 1=0;
+
+alter table company_view add last_refresh datetime;
+
+
+SELECT ROUTINE_TYPE, ROUTINE_NAME
+    FROM INFORMATION_SCHEMA.ROUTINES
+    WHERE ROUTINE_SCHEMA='prod_db_report';
+
+spname:- refresh_mv_company_view
+
+drop procedure refresh_mv_company_view;
+
+
+DELIMITER //
+CREATE PROCEDURE refresh_mv_company_view()
+BEGIN
+    -- Clear existing data in the materialized view table
+    TRUNCATE TABLE company_view;
+    -- Insert new data into the materialized view table
+    INSERT INTO  company_view (id,company_id,profile_id,category,sub_category,age_of_ops,revenue_generating,ttm_net,current_net,gross_margins,ebitda,aov,total_paying,ttm_ads_spend,repeat_customers,cac,amazon_rating,brand_ip,mom_growth,stage_of_company,roas,cm1,
+                               ltvbycac,ttm_revenue,current_revenue,nrr,total_customers,quarter_sm_spend,cac_payback,nps,yoy_growth,net_sales_efficiency,customer_growth,customer_retention,book_size,book_size_growth,ttm_gmv,take_rate,downloads,arpu,dau,mau,daubymau,
+                               recurring_revenue,ebitda_percentage,revenue_contribution_top_5,projectbyretainer,client_age,program_completion,awards,awards_yes_no,others_sub_category,open_to_conversation,list_me_now,status,priority,owner,verification_status,
+                               verified_by,verification_time,client_roaster,team_size,ask_price,completion_percentage,created_at,updated_at,created_by,updated_by,customer_profile_description,operational,projected_revenue,d_to_c_id	,debt_and_equity_id,suggested_buyers,
+                               created_by_id,updated_by_id,field_changed_time,text_field_status,classification,signup_mandate_id,ttm_ebitda,changed,onboarding_stage,objective,open_to_other_objective,discoverable,reason_to_sell,reason_to_buy,website,
+                               founder_pedigree,about,name,creator,current_fund_raise,funds_committed,last_admin_activity,fundraising_details_id,company_qualified_data_id,last_refresh)
+    select id,company_id,profile_id,category,sub_category,age_of_ops,revenue_generating,ttm_net,current_net,gross_margins,ebitda,aov,total_paying,ttm_ads_spend,repeat_customers,cac,amazon_rating,brand_ip,mom_growth,stage_of_company,roas,cm1,
+ltvbycac,ttm_revenue,current_revenue,nrr,total_customers,quarter_sm_spend,cac_payback,nps,yoy_growth,net_sales_efficiency,customer_growth,customer_retention,book_size,book_size_growth,ttm_gmv,take_rate,downloads,arpu,dau,mau,daubymau,
+recurring_revenue,ebitda_percentage,revenue_contribution_top_5,projectbyretainer,client_age,program_completion,awards,awards_yes_no,others_sub_category,open_to_conversation,list_me_now,status,priority,owner,verification_status,
+verified_by,verification_time,client_roaster,team_size,ask_price,completion_percentage,created_at,updated_at,created_by,updated_by,customer_profile_description,operational,projected_revenue,d_to_c_id	,debt_and_equity_id,suggested_buyers,
+created_by_id,updated_by_id,field_changed_time,text_field_status,classification,signup_mandate_id,ttm_ebitda,changed,onboarding_stage,objective,open_to_other_objective,discoverable,reason_to_sell,reason_to_buy,website,
+founder_pedigree,about,name,creator,current_fund_raise,funds_committed,last_admin_activity,fundraising_details_id,company_qualified_data_id,now() from prod_db.company;
+END //
+DELIMITER;
+
+
+CALL refresh_mv_company_view();
+
+
+id,company_id,profile_id,category,sub_category,age_of_ops,revenue_generating,ttm_net,current_net,gross_margins,ebitda,aov,total_paying,ttm_ads_spend,repeat_customers,cac,amazon_rating,brand_ip,mom_growth,stage_of_company,roas,cm1,
+ltvbycac,ttm_revenue,current_revenue,nrr,total_customers,quarter_sm_spend,cac_payback,nps,yoy_growth,net_sales_efficiency,customer_growth,customer_retention,book_size,book_size_growth,ttm_gmv,take_rate,downloads,arpu,dau,mau,daubymau,
+recurring_revenue,ebitda_percentage,revenue_contribution_top_5,projectbyretainer,client_age,program_completion,awards,awards_yes_no,others_sub_category,open_to_conversation,list_me_now,status,priority,owner,verification_status,
+verified_by,verification_time,client_roaster,team_size,ask_price,completion_percentage,created_at,updated_at,created_by,updated_by,customer_profile_description,operational,projected_revenue,d_to_c_id	,debt_and_equity_id,suggested_buyers,
+created_by_id,updated_by_id,field_changed_time,text_field_status,classification,signup_mandate_id,ttm_ebitda,changed,onboarding_stage,objective,open_to_other_objective,discoverable,reason_to_sell,reason_to_buy,website,
+founder_pedigree,about,name,creator,current_fund_raise,funds_committed,last_admin_activity,fundraising_details_id,company_qualified_data_id,																	
+
+
+
+=============================================================================================================================================================================================================================================================
+
+drop table deals;
+
+create table deals as SELECT * from prod_db.deal where 1=0;
+
+alter table deals add last_refresh datetime;
+
+
+SELECT ROUTINE_TYPE, ROUTINE_NAME
+    FROM INFORMATION_SCHEMA.ROUTINES
+    WHERE ROUTINE_SCHEMA='prod_db_report';
+
+
+spname:- refresh_mv_deals     refresh_mv_deals  
+
+drop procedure refresh_mv_deals;
+
+DELIMITER //
+CREATE PROCEDURE refresh_mv_deals()
+BEGIN
+    -- Clear existing data in the materialized view table
+    TRUNCATE TABLE deals;
+    -- Insert new data into the materialized view table
+    INSERT INTO  deals (id, buyer_id, seller_id,priority,offer_value,status,buy_owner ,sell_owner,deal_maker,interaction_notes,activity_log,created_at,updated_at,
+                        created_by,updated_by,created_by_id,updated_by_id,objective,initiator_id,shortlisted,pre_hold_status,sub_status,waiting_on,starred,action_source,
+                        status_updated_at,highly_relevant,viewed_details,device,last_refresh)
+    select id, buyer_id, seller_id,priority,offer_value,status,buy_owner ,sell_owner,deal_maker,interaction_notes,activity_log,created_at,updated_at,
+    created_by,updated_by,created_by_id,updated_by_id,objective,initiator_id,shortlisted,pre_hold_status,sub_status,waiting_on,starred,action_source,
+    status_updated_at,highly_relevant,viewed_details,device,now() from prod_db.deal;
+END //
+DELIMITER;
+
+CALL refresh_mv_deals()  
+
+call refresh_mv_deals();
+
+SELECT * FROM INFORMATION_SCHEMA.EVENTS WHERE EVENT_SCHEMA = 'prod_db_report';
+
+id, buyer_id, seller_id,priority,offer_value,status,buy_owner ,sell_owner,deal_maker,interaction_notes,activity_log,created_at,updated_at,
+created_by,updated_by,created_by_id,updated_by_id,objective,initiator_id,shortlisted,pre_hold_status,sub_status,waiting_on,starred,action_source,
+status_updated_at,highly_relevant,viewed_details,last_refresh
+
+
+show events information_schema.events;
+
+SELECT ROUTINE_NAME, ROUTINE_TYPE, CREATE_TIME
+FROM information_schema.ROUTINES
+WHERE ROUTINE_SCHEMA = 'db_'
+  AND ROUTINE_NAME = 'my_procedure';
+
+===========================================================
+
+drop table deals;
+
+create table deals as SELECT * from prod_db.deal where 1=0;
+
+alter table deals add last_refresh datetime;
+
+
+SELECT ROUTINE_TYPE, ROUTINE_NAME
+    FROM INFORMATION_SCHEMA.ROUTINES
+    WHERE ROUTINE_SCHEMA='prod_db_report';
+
+
+spname:- refresh_mv_deals     refresh_mv_deals  
+
+drop procedure refresh_mv_deals;
+
+DELIMITER //
+CREATE PROCEDURE refresh_mv_deals()
+BEGIN
+    -- Clear existing data in the materialized view table
+    TRUNCATE TABLE deals;
+    -- Insert new data into the materialized view table
+    INSERT INTO  deals (id, buyer_id, seller_id,priority,offer_value,status,buy_owner ,sell_owner,deal_maker,interaction_notes,activity_log,created_at,updated_at,
+                        created_by,updated_by,created_by_id,updated_by_id,objective,initiator_id,shortlisted,pre_hold_status,sub_status,waiting_on,starred,action_source,
+                        status_updated_at,highly_relevant,viewed_details,device,last_refresh)
+    select id, buyer_id, seller_id,priority,offer_value,status,buy_owner ,sell_owner,deal_maker,interaction_notes,activity_log,created_at,updated_at,
+    created_by,updated_by,created_by_id,updated_by_id,objective,initiator_id,shortlisted,pre_hold_status,sub_status,waiting_on,starred,action_source,
+    status_updated_at,highly_relevant,viewed_details,device,now() from prod_db.deal;
+END //
+DELIMITER;
+
+CALL refresh_mv_deals()  
+
+call refresh_mv_deals();
+
+SELECT * FROM INFORMATION_SCHEMA.EVENTS WHERE EVENT_SCHEMA = 'prod_db_report';
+
+id, buyer_id, seller_id,priority,offer_value,status,buy_owner ,sell_owner,deal_maker,interaction_notes,activity_log,created_at,updated_at,
+created_by,updated_by,created_by_id,updated_by_id,objective,initiator_id,shortlisted,pre_hold_status,sub_status,waiting_on,starred,action_source,
+status_updated_at,highly_relevant,viewed_details,last_refresh
+
+
+show events information_schema.events;
+
+SELECT ROUTINE_NAME, ROUTINE_TYPE, CREATE_TIME
+FROM information_schema.ROUTINES
+WHERE ROUTINE_SCHEMA = 'db_'
+  AND ROUTINE_NAME = 'my_procedure';
+
+
+-------------------------------------------------------
+
+drop table cue_card_change_view;
+
+create table cue_card_change_view as SELECT * from prod_db.cue_card_change where 1=0;
+
+alter table cue_card_change_view add last_refresh datetime;
+
+
+SELECT ROUTINE_TYPE, ROUTINE_NAME
+    FROM INFORMATION_SCHEMA.ROUTINES
+    WHERE ROUTINE_SCHEMA='prod_db_report';
+
+
+spname:- refresh_mv_deals     refresh_mv_deals     refresh_mv_cue_card_change_view 
+
+drop procedure refresh_mv_cue_card_change_view;
+
+DELIMITER //
+CREATE PROCEDURE refresh_mv_cue_card_change_view()
+BEGIN
+    -- Clear existing data in the materialized view table
+    TRUNCATE TABLE cue_card_change_view;
+    -- Insert new data into the materialized view table
+    INSERT INTO cue_card_change_view (id, company_pid ,about, ask_price, founder_pedigree, reason_to_buy, reason_to_sell , title, created_at, created_by,updated_at, updated_by, created_by_id ,updated_by_id , memo, last_refresh)
+    select id, company_pid ,about, ask_price, founder_pedigree, reason_to_buy, reason_to_sell , title, created_at, created_by,updated_at, updated_by, created_by_id ,updated_by_id , memo, now() from prod_db.cue_card_change;
+END //
+DELIMITER;
+
+CALL refresh_mv_deals()      CALL refresh_mv_cue_card_change_view(); 
+
+call refresh_mv_deals();
+
+SELECT * FROM INFORMATION_SCHEMA.EVENTS WHERE EVENT_SCHEMA = 'prod_db_report';
+
+show events information_schema.events;
+
+SELECT ROUTINE_NAME, ROUTINE_TYPE, CREATE_TIME
+FROM information_schema.ROUTINES
+WHERE ROUTINE_SCHEMA = 'db_'
+  AND ROUTINE_NAME = 'my_procedure';
+
+
+
+
+id, company_pid ,about, ask_price, founder_pedigree, reason_to_buy, reason_to_sell , title, created_at, created_by,updated_at, updated_by, created_by_id ,updated_by_id , memo
+
+
+===============================================================
+
+
+drop table matching_view;
+
+create table matching_view as SELECT * from prod_db.matching where 1=0;
+
+alter table matching_view add last_refresh datetime;
+
+
+SELECT ROUTINE_TYPE, ROUTINE_NAME
+    FROM INFORMATION_SCHEMA.ROUTINES
+    WHERE ROUTINE_SCHEMA='prod_db_report';
+
+
+spname:- refresh_mv_matching_view
+
+drop procedure refresh_mv_matching_view;
+
+DELIMITER //
+CREATE PROCEDURE refresh_mv_matching_view()
+BEGIN
+    -- Clear existing data in the materialized view table
+    TRUNCATE TABLE matching_view;
+    -- Insert new data into the materialized view table
+    INSERT INTO matching_view (id,created_at,created_by,updated_at,updated_by,buyer_id,primary_id_type,seller_id,status,suggested_by,uid,similarity_score,prompt,created_by_id,updated_by_id,mandate_id,highly_relevant,valid, last_refresh)
+    select id,created_at,created_by,updated_at,updated_by,buyer_id,primary_id_type,seller_id,status,suggested_by,uid,similarity_score,prompt,created_by_id,updated_by_id,mandate_id,highly_relevant,valid, now() from prod_db.matching;
+END //
+DELIMITER;
+
+CALL refresh_mv_deals()      CALL refresh_mv_cue_card_change_view(); 
+
+call refresh_mv_deals();     CALL refresh_mv_matching_view();
+
+SELECT * FROM INFORMATION_SCHEMA.EVENTS WHERE EVENT_SCHEMA = 'prod_db_report';
+
+show events information_schema.events;
+
+SELECT ROUTINE_NAME, ROUTINE_TYPE, CREATE_TIME
+FROM information_schema.ROUTINES
+WHERE ROUTINE_SCHEMA = 'db_'
+  AND ROUTINE_NAME = 'my_procedure';
+
+
+
+
+id,created_at,created_by,updated_at,updated_by,buyer_id,primary_id_type,seller_id,status,suggested_by,uid,similarity_score,prompt,created_by_id,updated_by_id,mandate_id,highly_relevant,valid
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

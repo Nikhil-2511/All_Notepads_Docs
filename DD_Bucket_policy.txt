@@ -1,0 +1,427 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowSpecificDomain",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::donedeal-app-new/*",
+      "Condition": {
+        "StringLike": {
+          "aws:Referer": "https://done.deals/*"
+        }
+      }
+    }
+  ]
+}
+
+
+
+===========================================Compressed policy=========
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "PublicReadGetObject",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::compressed-img-bucket/*"
+        }
+    ]
+}
+
+
+=====================================
+
+
+
+https://qa.done.deals/admin/notes/8dcd02cb-1adf-4149-8258-c87cafa47513
+nadeem@done.deals
+12345
+
+
+=============================28Nov_New==========================================
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowSpecificDomainAccess",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::your-bucket-name/*",
+            "Condition": {
+                "StringLike": {
+                    "aws:Referer": "https://example.com/*"
+                }
+            }
+        },
+        {
+            "Sid": "DenyAllOtherAccess",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::your-bucket-name/*",
+            "Condition": {
+                "StringNotLike": {
+                    "aws:Referer": "https://example.com/*"
+                }
+            }
+        }
+    ]
+}
+
+============= 
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowAccessFromSpecificDomain",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::donedeal-app-new/*",
+            "Condition": {
+                "StringLike": {
+                    "aws:Referer": "https://qa.done.deals/*"
+                }
+            }
+        },
+        {
+            "Sid": "DenyAllOtherAccess",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::donedeal-app-new/*",
+            "Condition": {
+                "StringNotLike": {
+                    "aws:Referer": "https://qa.done.deals/*"
+                }
+            }
+        }
+    ]
+}
+
+
+
+=========================Step2==================
+
+{
+"Version": "2008-10-17",
+"Id": "Restrict based on HTTP referrer policy",
+"Statement": [
+    {
+        "Sid": "1",
+        "Effect": "Deny",
+        "Principal": {
+            "AWS": "*"
+        },
+        "Action": "s3:GetObject",
+        "Resource": "arn:aws:s3:::mybucket/myprefix/*",
+        "Condition": {
+            "StringNotLike": {
+                "aws:Referer": [
+                    "http://done.deals/*",
+                    "http://qa.done.deals/*"
+                ]
+            }
+        }
+    }
+]
+}
+
+NOTE: edit Allow or Deny as per the need:
+
+==============Original_Policy=============================
+
+{
+"Version": "2008-10-17",
+"Id": "Restrict based on HTTP referrer policy",
+"Statement": [
+    {
+        "Sid": "1",
+        "Effect": "Deny",
+        "Principal": {
+            "AWS": "*"
+        },
+        "Action": "s3:GetObject",
+        "Resource": "arn:aws:s3:::mybucket/myprefix/*",
+        "Condition": {
+            "StringNotLike": {
+                "aws:Referer": [
+                    "http://www.mydomain.com/*",
+                    "http://www.subdomain.mydomain.com/*"
+                ]
+            }
+        }
+    }
+]
+}
+
+
+==============================3rdDecember====================================
+
+{
+    "Version": "2012-10-17",
+    "Id": "http-referer-policy-example",
+    "Statement": [
+        {
+            "Sid": "AllowGetRequestsFromSpecificReferers",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": [
+                "s3:GetObject",
+                "s3:GetObjectVersion"
+            ],
+            "Resource": "arn:aws:s3:::DOC-EXAMPLE-BUCKET/*",
+            "Condition": {
+                "StringLike": {
+                    "aws:Referer": [
+                        "http://www.example.com/*",
+                        "http://example.com/*"
+                    ]
+                }
+            }
+        }
+    ]
+}
+======================================================
+
+{
+    "Version": "2012-10-17",
+    "Id": "http-referer-policy-example",
+    "Statement": [
+        {
+            "Sid": "AllowGetRequestsFromSpecificReferers",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": [
+                "s3:GetObject",
+                "s3:GetObjectVersion"
+            ],
+            "Resource": "arn:aws:s3:::donedeal-app-new/*",
+            "Condition": {
+                "StringLike": {
+                    "aws:Referer": [
+                        "http://www.qa.done.deals.com/*",
+                        "http://done.deals.com/*"
+                    ]
+                }
+            }
+        }
+    ]
+}
+
+
+=====================================================12Dec===========================================
+
+{
+    "Version": "2012-10-17",
+    "Id": "http referer policy example",
+    "Statement": [
+        {
+            "Sid": "Allow get requests originated from www.example.com and example.com",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::donedeal-app-new/*",
+            "Condition": {
+                "StringLike": {
+                    "aws:Referer": [
+                        "http://www.qa.done.deals/*",
+                        "http://www.done.deals/*"
+                    ]
+                }
+            }
+        }
+    ]
+}
+
+
+
+
+==================================================================================================================
+
+{
+  "Version": "2012-10-17",
+  "Id": "RestrictDownloadsToSpecificDomain",
+  "Statement": [
+    {
+      "Sid": "AllowGetRequestsFromSpecificDomain",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::donedeal-app-new/*",
+      "Condition": {
+        "StringLike": {
+          "aws:Referer": [
+            "https://www.qa.done.deals/*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "DenyGetRequestsNotFromSpecificDomain",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::donedeal-app-new/*",
+      "Condition": {
+        "StringNotLike": {
+          "aws:Referer": [
+            "https://www.qa.done.deals/*"
+          ]
+        }
+      }
+    }
+  ]
+}
+
+
+
+----------CORS--------------------------
+
+<CORSConfiguration>
+  <CORSRule>
+    <AllowedOrigin>https://www.qa.done.deals</AllowedOrigin>
+    <AllowedMethod>GET</AllowedMethod>
+    <AllowedHeader>*</AllowedHeader>
+    <MaxAgeSeconds>3000</MaxAgeSeconds>
+  </CORSRule>
+</CORSConfiguration>
+
+
+
+
+
+
+
+
+
+1. Access throght done.deals domain, the rest request should me block
+
+
+
+
+
+
+
+
+
+
+ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.34.214 sudo docker cp /home/ubuntu/fe-app/donedeal-web// fe-con2:/dockertest4/ubuntu/fe-app/donedeal-web
+
+
+===============================================================================================
+
+                                15_JAN_25
+
+
+
+{
+  "Version": "2012-10-17",
+  "Id": "PolicyForDomainRestriction",
+  "Statement": [
+    {
+      "Sid": "AllowAccessFromSpecificDomain",
+      "Effect": "Allow",
+      "Principal": "*",
+      "Action": "s3:GetObject",
+      "Resource": "arn:aws:s3:::donedeal-app-new/*",
+      "Condition": {
+        "StringLike": {
+          "aws:Referer": "qa.done.deals/*"
+        }
+      }
+    },
+    {
+      "Sid": "DenyAllOtherAccess",
+      "Effect": "Deny",
+      "Principal": "*",
+      "Action": "s3:*",
+      "Resource": "arn:aws:s3:::donedeal-app-new/*"
+    }
+  ]
+}
+============================================================================
+
+Policy provided by AWS Team:
+
+{
+
+    "Version": "2012-10-17",
+
+    "Statement": [
+
+        {
+
+            "Effect": "Deny",
+
+            "Principal": "*",
+
+            "Action": "s3:GetObject",
+
+            "Resource": "arn:aws:s3:::your-bucket-name/*",
+
+            "Condition": {
+
+                "StringNotEquals": {
+
+                    "aws:Referer": "https://your-allowed-domain.com/*"
+
+                }
+
+            }
+
+        }
+
+    ]
+
+}
+
+
+https://docs.aws.amazon.com/AmazonS3/latest/userguide/ManageCorsUsing.html
+
+====================================================================================================
+
+I want to use this policy only:
+
+{
+    "Version": "2012-10-17",
+    "Id": "PolicyForDomainRestriction",
+    "Statement": [
+        {
+            "Sid": "AllowAccessFromSpecificDomain",
+            "Effect": "Allow",
+            "Principal": "*",
+            "Action": "s3:GetObject",
+            "Resource": "arn:aws:s3:::donedeal-app-new/*",
+            "Condition": {
+                "StringLike": {
+                    "aws:Referer": "qa.done.deals/*"
+                }
+            }
+        },
+        {
+            "Sid": "DenyAllOtherAccess",
+            "Effect": "Deny",
+            "Principal": "*",
+            "Action": "s3:*",
+            "Resource": "arn:aws:s3:::donedeal-app-new/*",
+            "Condition": {
+                "StringNotLike": {
+                    "aws:Referer": "qa.done.deals/*"
+                }
+            }
+        }
+    ]
+}
+
+===============================================================================================
+
+
+

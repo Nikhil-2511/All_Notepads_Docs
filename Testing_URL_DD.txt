@@ -1,0 +1,30 @@
+1. https://fr-new-835590679.ap-south-1.elb.amazonaws.com/login
+
+2. https://fr-new-835590679.ap-south-1.elb.amazonaws.com/api/integration/dashboard/query?period=previous_week
+
+3. https://fr-new-835590679.ap-south-1.elb.amazonaws.com/api/company-service/v1/user/emailCheck?email=zrty@ast.com&primaryIdType=buyer
+
+
+4. https://app.techyhub.co.in/logins
+
+
+     qa.done.deals
+
+
+https://qa.done.deals/api/company-service/v1/user/emailCheck?email=zrty@ast.com&primaryIdType=buyer
+
+
+https://qa.done.deals/api/integration/dashboard/query?period=previous_week
+
+
+
+
+
+
+https://qa.done.deals/admin/buyer/profile-page/a08f95d2-751b-42ed-a485-4ea2d4c03601
+nadeem@done.deals
+12345
+
+
+
+redis-stack-server --port 6800

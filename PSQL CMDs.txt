@@ -1,0 +1,101 @@
+>  Installing PostgreSQL:
+
+# Update the package list
+sudo apt-get update
+
+# Install PostgreSQL
+sudo apt-get install postgresql postgresql-contrib
+
+>  Starting PostgreSQL Service:
+
+sudo systemctl start postgresql.services
+sudo systemctl enable postgresql
+
+
+>  Switching to the PostgreSQL User:
+
+sudo -i -u postgres
+
+> Accessing the PostgreSQL Prompt: 
+
+psql
+
+>  Basic psql Commands: 
+
+ * Creating a Database:
+
+CREATE DATABASE mydatabase;
+
+ * Listing Databases:
+\l
+ 
+ * Connecting to a Database:
+\c mydatabase
+
+ * Listing Tables:
+\dt
+
+ * Describing a Table:
+\d users
+
+ * _Exiting psql
+\q
+
+
+* Taking backup in PSQl:
+pg_dump -U your_username -h localhost -F c -b -v -f /path/to/backup/your_db_name.backup your_db_name
+
+Note: -U: Specifies the PostgreSQL username.
+-h: Specifies the host (e.g., localhost).
+-F c: Outputs the backup in a custom format (compressed).
+-b: Includes large objects in the backup.
+-v: Enables verbose mode.
+-f: Specifies the output file location and name.
+your_db_name: Name of the database you are backing up.
+
+
+* Restoring backup in PSQL:
+pg_restore -U your_username -h localhost -d your_db_name -v /path/to/backup/your_db_name.backup
+
+Note:-U: Specifies the PostgreSQL username.
+-h: Specifies the host.
+-d: Specifies the database to restore to. Make sure this database already exists.
+-v: Enables verbose mode.
+
+
+
+pg_dump -U superset -h localhost -F c -b -v -f pg_dump -U your_username -h localhost -F c -b -v -f /path/to/backup/your_db_name.backup your_db_nam/superset_new.backup superset_new
+
+pg_dump -U superset -h localhost -F c -b -v -f /var/lib/postgresql/superset_21dec.backup superset 
+
+
+pg_dump -U superset -h localhost -p 5432 -d superset -F c -f /var/lib/postgresql/superset_18dec.backup
+============================================================================================================
+Use This command to dumb/backup:
+
+PGPASSWORD=superset pg_dump -U superset -h superset-postgres -p 5432 -d superset -F c -b -v -f /var/lib/postgresql/superset_21dec.backup
+----------------------------------------------------------------------------------------------------------------------------
+Use this command for restore:
+
+PGPASSWORD=superset pg_restore -U superset -h superset-postgres -p 5432 -d superset -v /var/lib/postgresql/superset_21dec.backup
+
+===============================================================================================================
+pg_restore -U superset -h localhost -d superset_new -v /backup16dec/superset_new16dec.backup
+
+
+Query that worked:  psql -U superset -h localhost -d ss -f /backup/superset_backup3dec.sql ( 17Dec)
+
+
+
+psql postgresql://superset:superset@superset-postgres:5432/superset -c "\copy data27dec TO 'data27dec.csv' WITH CSV HEADER"
+
+
+
+
+
+shared_buffers memory
+
+
+
+
+gmake PG_CONFIG=/usr/bin/pg_config all

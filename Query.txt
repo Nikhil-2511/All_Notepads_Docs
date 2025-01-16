@@ -1,0 +1,109 @@
+SELECT
+    ro_mapping.ro AS "RO",
+    SUBSTRING("lms_portfolio_data"."AGREEMENT NO" FROM 7 FOR 2) AS "Region",
+    "lms_portfolio_data"."BRANCH NAME" AS "Branch",
+    "lms_portfolio_data"."APPLICATION NUMBER" AS "Application no",
+    "lms_portfolio_data"."AGREEMENT NO" AS "Loan Account Number",
+    "lms_portfolio_data"."CUSTOMER NAME" AS "Customer Name",
+    "lms_portfolio_data"."CUSTOMER MOBILE NO" AS "Contact Number",
+    ROUND("customer_score"."Customer score") AS "customerscore",
+    portfolio_extract_as_on_1."DAYS PAST DUE",
+    (portfolio_extract_as_on_1."DAYS PAST DUE" + 4) / 30 AS "Del_String",
+    'Discussion Pending' AS "XYZ BKT Flag",
+    'Discussion Pending' AS "XYZ Opening",
+    'Discussion Pending' AS "As of date XYZ",
+    'Discussion Pending' AS "Opening NPA/PNPA",
+    'Discussion Pending' AS "Opening POS NPA/PNPA",
+    CASE 
+        WHEN (
+            CASE 
+                WHEN "portfolio_extract_t1"."LOAN STATUS" = 'C' THEN '-'
+                WHEN "portfolio_extract_t1"."ACCOUNTING CLASSIFICATION" = 'Regular' THEN '-'
+                ELSE 'NPA'
+            END
+        ) = 'NPA' THEN 'NPA'
+        WHEN CEIL("portfolio_extract_t1"."DAYS PAST DUE" / 30.0) >= 3 THEN 'PNPA'
+        ELSE '-'
+    END AS "As on date NPA/PNPA",
+    "portfolio_extract_t1"."DAYS PAST DUE" AS "Current DPD ColumnNo39",
+    CEIL("portfolio_extract_t1"."DAYS PAST DUE" / 30.0) AS "As on Date BKT ColumnNo40",
+    "portfolio_extract_t1"."LOAN STATUS" AS "Case Status ColumnNo41",     
+    CASE 
+        WHEN "portfolio_extract_t1"."LOAN STATUS" = 'C' THEN '-'
+        WHEN "portfolio_extract_t1"."ACCOUNTING CLASSIFICATION" = 'Regular' THEN '-'
+        ELSE 'NPA'
+    END AS "As on Date NPA ColumnNo47",
+    "portfolio_extract_t1"."ACCOUNTING CLASSIFICATION" AS "As On Date Account Classification ColumnNo126"
+FROM lms_portfolio_data
+LEFT JOIN ro_mapping
+    ON "lms_portfolio_data"."BRANCH NAME" = ro_mapping.branch_name
+LEFT JOIN customer_score
+    ON customer_score."Agreement no." = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN portfolio_extract_as_on_1
+    ON portfolio_extract_as_on_1."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN portfolio_extract_t1
+    ON portfolio_extract_t1."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+LIMIT 1;
+===============
+
+
+SELECT
+    ro_mapping.ro AS "RO",
+    SUBSTRING("lms_portfolio_data"."AGREEMENT NO" FROM 7 FOR 2) AS "Region",
+    "lms_portfolio_data"."BRANCH NAME" AS "Branch",
+    "lms_portfolio_data"."APPLICATION NUMBER" AS "Application no",
+    "lms_portfolio_data"."AGREEMENT NO" AS "Loan Account Number",
+    "lms_portfolio_data"."CUSTOMER NAME" AS "Customer Name",
+    "lms_portfolio_data"."CUSTOMER MOBILE NO" AS "Contact Number",
+    ROUND("customer_score"."Customer score") AS "customerscore",
+    portfolio_extract_as_on_1."DAYS PAST DUE",
+    (portfolio_extract_as_on_1."DAYS PAST DUE" + 4) / 30 AS "Del_String",
+    'Discussion Pending' AS "XYZ BKT Flag",
+    'Discussion Pending' AS "XYZ Opening",
+    'Discussion Pending' AS "As of date XYZ",
+    'Discussion Pending' AS "Opening NPA/PNPA",
+    'Discussion Pending' AS "Opening POS NPA/PNPA",
+    CASE 
+        WHEN (
+            CASE 
+                WHEN "portfolio_extract_t1"."LOAN STATUS" = 'C' THEN '-'
+                WHEN "portfolio_extract_t1"."ACCOUNTING CLASSIFICATION" = 'Regular' THEN '-'
+                ELSE 'NPA'
+            END
+        ) = 'NPA' THEN 'NPA'
+        WHEN CEIL("portfolio_extract_t1"."DAYS PAST DUE" / 30.0) >= 3 THEN 'PNPA'
+        ELSE '-'
+    END AS "As on date NPA/PNPA",
+CASE 
+    WHEN "portfolio_extract_t1"."LOAN STATUS" = 'C' 
+        OR "portfolio_extract_t1"."ACCOUNTING CLASSIFICATION" = 'Regular' 
+        OR CEIL("portfolio_extract_t1"."DAYS PAST DUE" / 30.0) >= 3 
+    THEN 
+        "portfolio_extract_t1"."UNBILLED PRINCIPAL AMOUNT" + "portfolio_extract_t1"."OVERDUE PRINCIPAL AMOUNT"
+    ELSE 
+        0
+END AS "As of Date POS NPA/PNPA",
+
+    "portfolio_extract_t1"."DAYS PAST DUE" AS "Current DPD ColumnNo39",
+    CEIL("portfolio_extract_t1"."DAYS PAST DUE" / 30.0) AS "As on Date BKT ColumnNo40",
+    "portfolio_extract_t1"."LOAN STATUS" AS "Case Status ColumnNo41",     
+    CASE 
+        WHEN "portfolio_extract_t1"."LOAN STATUS" = 'C' THEN '-'
+        WHEN "portfolio_extract_t1"."ACCOUNTING CLASSIFICATION" = 'Regular' THEN '-'
+        ELSE 'NPA'
+    END AS "As on Date NPA ColumnNo47",
+    "portfolio_extract_t1"."ACCOUNTING CLASSIFICATION" AS "As On Date Account Classification ColumnNo126"
+FROM lms_portfolio_data
+LEFT JOIN ro_mapping
+    ON "lms_portfolio_data"."BRANCH NAME" = ro_mapping.branch_name
+LEFT JOIN customer_score
+    ON customer_score."Agreement no." = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN portfolio_extract_as_on_1
+    ON portfolio_extract_as_on_1."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN portfolio_extract_t1
+    ON portfolio_extract_t1."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+LIMIT 1;
+
+
+
+====

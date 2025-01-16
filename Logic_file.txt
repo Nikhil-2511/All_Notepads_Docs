@@ -1,0 +1,22 @@
+form the last 12 month portfolio DPD columns - last month of the portfolio (DPD+4)/30
+
+TableName: portfolio_ext_as_on_1_data
+
+
+Logic query:
+
+SELECT
+    portfolio_date,
+    DPD,
+    -- Calculate DPD for last month with the formula (DPD + 4) / 30
+    ("DAYS PAST DUE" + 4) / 30 AS last_month_dpd
+FROM
+    portfolio_ext_as_on_1_data
+WHERE
+    portfolio_date >= CURRENT_DATE - INTERVAL '12 months'
+    AND portfolio_date = (SELECT MAX(portfolio_date) FROM portfolio_ext_as_on_1_data)
+ORDER BY
+    portfolio_date DESC;
+
+
+

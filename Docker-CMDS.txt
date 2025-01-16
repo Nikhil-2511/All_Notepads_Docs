@@ -1,0 +1,58 @@
+============================================Here are some Docker Commands======================================
+
+1. TO Start/Stop/Restart Container: Sudo docker Start/Stop/Restart <Container name>
+
+2. TO exec the Container: Sudo docker exec -it <Container name> /bin/bash
+ 
+3. TO copy file/directory from host machine to container: Sudo docker cp /path/on/host/example.txt container_name:/path/in/container
+
+4. To copy file/directory from container to host machine: Sudo docker cp container_name:/path/in/container/example.txt /path/on/host
+
+5. To check list of  Docker Networks : sudo docker network ls
+
+6. To check Docker container IP:  Sudo docker inspect <Container name>
+
+7. To create custom Docker Network: Sudo docker network create --subnet=172.30.0.0/16 <network name>
+
+8. To check the details of that custom network that network: Sudo docker network inspect <custom-network>
+
+9. To Connect existing continers with that network: docker network connect <custom-network> <container_name>
+
+10. To Connect new containers with that network: Sudo docker run -i -d --network <custom-network> --name <container_name> -p <00:00> ImageName
+
+11. To create softlynk: ln -s /path/to/original/file /path/to/symlink
+
+12. To Free Memory Cache in linux: sudo echo 1 > /proc/sys/vm/drop_caches
+
+
+
+
+sudo socat TCP-LISTEN:8080,fork TCP:0.0.0.0:172.31.30.4:8080
+
+
+
+sudo docker cp /home/ubuntu/redis-stack-server ga-jar:/home/ubuntu
+
+
+Sudo docker cp Redis-stack:/opt/redis-stack/bin/redis-stack-server /home/ubuntu
+
+
+sudo docker cp ga-jar:/jar_files1/ubuntu/redis-integration-1.0.0.jar /home/ubuntu/new-redis
+
+sudo docker cp /home/ubuntu/new-redis/redis-integration-1.0.0.jar Redis-new:/home
+
+
+
+sudo docker cp /home/ubuntu/fe-app/donedeal-web/build/ fe-con2:/dockertest4/ubuntu/fe-app/donedeal-web
+
+
+docker exec fe-con2 mv /home/ubuntu/fe-app/donedeal-web/build/ /dockertest4/ubuntu/fe-app/donedeal-web
+
+        "build:debug": "webpack --mode development --devtool source-map"
+
+
+"build:debug": "webpack --mode development --devtool source-map"
+
+
+sudo docker cp /home/ubuntu/fe-app/donedeal-web/ fe-con2:/dockertest4/ubuntu/fe-app/
+

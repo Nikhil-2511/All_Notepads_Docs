@@ -1,0 +1,70 @@
+SELECT DISTINCT 
+    
+
+GREATEST(LEAST((CASE 
+    WHEN ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END) - ((select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" in ('ASHCASHCAS','QUECHEQUECHE','electronic fund transfer')) 
++ ("portfolio_extract_t1"."OUTSTANDING EXCESS AMOUNT") + 0) < 0 THEN 0
+    ELSE ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END) - ((select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" in ('ASHCASHCAS','QUECHEQUECHE','electronic fund transfer'))
+ + ("portfolio_extract_t1"."OUTSTANDING EXCESS AMOUNT") + 0)
+END), (COALESCE("nach_status"."Amount",0))), ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END)) AS "NACH Present Amt"
+
+into checkdataset
+   
+FROM lms_portfolio_data 
+LEFT JOIN ro_mapping
+    ON "lms_portfolio_data"."BRANCH NAME" = ro_mapping.branch_name
+LEFT JOIN customer_score
+    ON customer_score."Agreement no." = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN portfolio_extract_as_on_1
+    ON portfolio_extract_as_on_1."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN portfolio_extract_t1
+    ON portfolio_extract_t1."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN death_stock_legal
+    ON "death_stock_legal"."LoanAccountNumber" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN billing_pending
+    ON "billing_pending"."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN nach_presentation 
+    ON "nach_presentation"."Loan Account NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN nach_status
+    ON "nach_status"."Unique Reference Number" = "lms_portfolio_data"."APPLICATION NUMBER"
+LEFT JOIN field_mapping
+    ON "field_mapping"."Loan Acount NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN co_applicant_data
+    ON "co_applicant_data"."LOAN_ACCOUNT_NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN gurrantor_data
+    ON "gurrantor_data"."LOAN_ACCOUNT_NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN fe_pdc_data
+    ON "fe_pdc_data"."Loan Number" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN case_status
+    ON "case_status"."Loan Acount NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN xyz_bkt
+    ON "xyz_bkt"."loan_account_number" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN portfolio_extract_as_on_5
+    ON portfolio_extract_as_on_5."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN bounce_count_data
+    ON bounce_count_data."Loan Account Number" = "lms_portfolio_data"."AGREEMENT NO";
+
+
+
+
+
+
+
+
+
+
+
+

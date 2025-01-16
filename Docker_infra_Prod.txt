@@ -1,0 +1,52 @@
+ Server Name: company-metric-app
+Server IP:    13.233.185.221
+Redis StackIP: 6379 
+
+
+
+
+
+
+
+
+
+
+
+
+
+-Dspring.profiles.active=production
+
+-Dcompany.base.url=http://13.127.138.59:8080/api/company-service
+
+
+
+
+
+
+
+
+
+
+
+nohup java -Xms512m -Xmx1024m -jar -Dspring.datasource.url=jdbc:mysql://172.31.47.182/prod_db -Dspring.datasource.username=app_user -Dspring.datasource.password=App@123!@# -Dgoogle_redirect_uri=https://app.done.deals/analytics -Dgoogle.application.credentials=/home/ubuntu/client_secret_ga.json /home/ubuntu/ga-integration-1.0.0.jar &
+
+
+
+
+
+
+
+
+
+
+
+nohup java -jar -Dspring.datasource.url=jdbc:mysql://172.31.47.182/done_deal_uat -Dredis.host=13.233.185.221 -Dredis.port=8080 -Dspring.datasource.username=app_user -Dspring.datasource.password=App@123!@# -Dserver.port=8081 -Dspring.profiles.active=production -Dgoogle_redirect_uri=ec2-52-66-207-72.ap-south-1.compute.amazonaws.com:3000/analytics -Dgoogle_client_id=1086275954467-upginoic55b0abc398mb4bkd12g0u153.apps.googleusercontent.com -Dgoogle_client_secret=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 -Dgoogle.application.credentials=/home/GA-Project5-cc828859ec28.json /home/redis-integration-1.0.0.jar &
+
+
+
+
+
+
+https://app.done.deals/api/integration/dashboard/query?period=previous_week
+
+curl -X GET "http://172.31.45.166:8080/api/company-service/v1/user/emailCheck?email=zrty@ast.com&primaryIdType=buyer"

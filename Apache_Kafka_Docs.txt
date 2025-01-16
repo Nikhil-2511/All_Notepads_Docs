@@ -1,0 +1,251 @@
+Installing Apache Kafka on Ubuntu:
+
+1. Update package:
+==> sudo apt update && sudo apt upgrade -y
+
+2.Install java:
+==> sudo apt install openjdk-11-jdk -y
+    java -version
+
+3. Download & Install Kafka:
+==> wget https://downloads.apache.org/kafka/3.8.1/kafka_2.13-3.5.1.tgz
+
+4. Extract the File:
+==> tar -xzf kafka_2.13-3.8.1.tgz
+    mv kafka_2.13-3.8.1 /usr/local/kafka
+
+5. Start Kafka and Zookeeper:
+==> /usr/local/kafka/bin/zookeeper-server-start.sh /usr/local/kafka/config/zookeeper.properties
+
+
+6. Start Kafka:
+==> /usr/local/kafka/bin/kafka-server-start.sh /usr/local/kafka/config/server.properties
+
+
+7. Creating Topics in Kafka:
+==> /usr/local/kafka/bin/kafka-topics.sh --create --topic my-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+
+8. List existing topics:
+==> /usr/local/kafka/bin/kafka-topics.sh --list --bootstrap-server localhost:9092
+
+9. Produce messages to the topic:
+==> /usr/local/kafka/bin/kafka-console-producer.sh --topic my-topic --bootstrap-server localhost:9092
+
+10. Consume messages:
+==> /usr/local/kafka/bin/kafka-console-consumer.sh --topic my-topic --bootstrap-server localhost:9092 --from-beginning
+
+
+
+Connecting Kafka with PostgreSQL:
+
+11. Install Kafka Connect:
+==> Kafka Connect comes bundled with Kafka. No separate installation is needed.
+
+12. Download the JDBC Connector:
+==> wget https://packages.confluent.io/maven/io/confluent/kafka-connect-jdbc/10.9.4/kafka-connect-jdbc-10.9.4.jar
+
+13. Place the JAR file in Kafka’s plugins directory:
+==> mkdir /usr/local/kafka/plugins
+    mv kafka-connect-jdbc-10.9.4.jar /usr/local/kafka/plugins
+
+
+Configure Kafka Connect:
+14. Create a configuration file (e.g., postgres-sink.properties): 
+==>vi /usr/local/kafka/config/postgres-sink.properties
+ 
+Add the following:
+
+name=postgres-sink
+connector.class=io.confluent.connect.jdbc.JdbcSinkConnector
+tasks.max=1
+topics=my-topic
+connection.url=jdbc:postgresql://localhost:5432/mydatabase
+connection.user=your_postgres_user
+connection.password=your_postgres_password
+auto.create=true
+insert.mode=insert
+
+
+15. Start Kafka Connect:
+==> /usr/local/kafka/bin/connect-standalone.sh /usr/local/kafka/config/connect-standalone.properties /usr/local/kafka/config/postgres-sink.properties
+
+16. Verify Data in PostgreSQL.............................................................
+
+
+17. How to check created topics:
+==> /usr/local/kafka/bin$ /usr/local/kafka/bin/kafka-topics.sh --list --bootstrap-server localhost:9092
+
+18. How to create Topic:
+==> /usr/local/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic firstTopic
+
+19. How to check connectivity:
+==> nc -vz localhost 9092
+
+20. How to insert data from .csv,.txt in topics:
+==> /usr/local/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic test19nov < test.txt 
+
+21. To Access PostgreSQL:
+==> sudo -u postgres psql
+==>  psql -U ubuntu -p 5432 -d postgres (Use this command to access postgres)
+
+22. Describe topic: 
+==> /usr/local/kafka/bin/kafka-topics.sh --describe --topic firstTopic --bootstrap-server localhost:9092
+
+23. To Start New JDBC-connector file (jdbc-source.properties){ USE THIS CONNECTOR ONLY }
+==>/usr/local/kafka/bin/connect-standalone.sh connect-standalone.properties jdbc-source.properties
+
+24. How to transfer data from postgres to kafka-topic:
+==>  psql -h localhost -U ubuntu -d test1 -c "SELECT book_id, title, author FROM books LIMIT 10;" -F ',' --no-align | /usr/local/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic Topic20Nov
+
+==>  psql -h localhost -U ubuntu -d test1 -c "SELECT *  FROM books LIMIT 10;" -F ',' --no-align | /usr/local/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic Topic20Nov (Select * to insert entire table)
+
+
+
+=======================================BASIC_KAFKA_COMMANDS=============================================
+
+# Start Zookeeper
+bin/zookeeper-server-start.sh config/zookeeper.properties
+
+# Start Kafka
+bin/kafka-server-start.sh config/server.properties
+
+# Create a topic
+bin/kafka-topics.sh --create --topic my_topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+/usr/local/kafka/bin/kafka-topics.sh --create --topic mytopic5 --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+
+# List topics
+==>/usr/local/kafka/bin/kafka-topics.sh --list --bootstrap-server localhost:9092
+
+bin/kafka-topics.sh --list --bootstrap-server localhost:9092
+
+# Write data to Kafka
+bin/kafka-console-producer.sh --topic my_topic --bootstrap-server localhost:9092
+
+# Read data from Kafka
+bin/kafka-console-consumer.sh --topic my_topic --from-beginning --bootstrap-server localhost:9092
+
+==> /usr/local/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic Topic19Nov --partition 1 --from-beginning
+
+# Delete a topic
+bin/kafka-topics.sh --delete --topic my_topic --bootstrap-server localhost:9092
+==>  /usr/local/kafka/bin/kafka-topics.sh --delete --topic Topic20Nov  --bootstrap-server localhost:9092
+
+#Describe Topics
+bin/kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic <TOPIC_NAME>
+
+
+
+========================================================================================================
+
+==============================ClusterIDCommands=========================================================
+
+cd /usr/local/kafka/bin
+sh zookeeper-shell.sh localhost:2181
+
+ 
+set /cluster/id {"version":"1","id":"bmzW-YYnQMmLM8-kvdUjUQ"}
+
+
+==========================================================================================================
+=====================================JBDC_CONTENT=========================================================
+
+
+name=jdbc-sink-postgres
+connector.class=io.confluent.connect.jdbc.JdbcSinkConnector
+tasks.max=1
+topics=firstTopic
+connection.url=jdbc:postgresql://localhost:5432/my_database?user=my_user&password=my_password
+insert.mode=insert
+auto.create=true
+auto.evolve=true
+pk.mode=record_key
+pk.fields=id
+table.name.format=events
+==========================================================================================================
+
+How to execut JDBC connectors:
+==> /usr/local/kafka/bin/connect-standalone.sh /usr/local/kafka/config/connect-standalone.properties 
+
+/usr/local/kafka/bin/connect-standalone.sh config/connect-standalone.properties postgresql-sink.properties
+
+
+
+
+
+/usr/local/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic firstTopic --from-beginning
+
+
+/usr/local/kafka/bin/kafka-topics.sh --describe --topic firstTopic  --bootstrap-server localhost:9092
+
+
+/usr/local/kafka/bin/kafka-topics.sh --zookeeper localhost:2181--describe --topic firstTopic
+
+
+
+
+
+
+
+
+
+
+
+
+
+[Unit] 
+Description=Apache Zookeeper Service
+Requires=network.target
+After=network.target
+[Service]
+Type=simple 
+User=kafka 
+ExecStart=/home/kafka/kafka/bin/zookeeper-server-start.sh  /home/kafka/kafka/config/zookeeper.properties        
+ ExecStop=/home/kafka/kafka/bin/zookeeper-server-stop.sh Restart=on-abnormal 
+ 
+[Install] 
+WantedBy=multi-user.target
+
+
+
+[Unit] 
+Description=Apache Kafka Service that requires zookeeper service 
+Requires=zookeeper.service 
+After=zookeeper.service 
+ 
+[Service] 
+Type=simple 
+User=kafka 
+ExecStart= /home/kafka/kafka/bin/kafka-server-start.sh /home/kafka/kafka/config/server.properties                             ExecStop=/home/kafka/kafka/bin/kafka-server-stop.sh 
+ 
+Restart=on-abnormal 
+[Install] 
+WantedBy=multi-user.target
+
+
+
+
+/usr/local/kafka/logs
+
+
+
+
+wget https://jdbc.postgresql.org/download/postgresql-42.7.4.jar
+
+wget https://packages.confluent.io/maven/io/confluent/kafka-connect-jdbc/10.8.0/kafka-connect-jdbc-10.8.0.jar
+
+
+bmzW-YYnQMmLM8-kvdUjUQ
+
+
+
+/usr/local/kafka/bin/kafka-console-producer.sh --topic Topic19Nov --partition 1 --bootstrap-server localhost:9092
+
+
+SELECT book_id, title, author FROM books LIMIT 10;
+
+psql -h localhost -U ubuntu -d test1 -c "SELECT book_id, title, author FROM books LIMIT 10;" -F ',' --no-align | /usr/local/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic Topic20Nov 
+
+
+
+
+s3 domain policy, qa to qa hit only

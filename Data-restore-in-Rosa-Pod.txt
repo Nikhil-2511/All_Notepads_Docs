@@ -1,0 +1,94 @@
+How To Copy Data from Base machine to Po
+
+Pod Name: superset-postgres-b79999687-pzs4b
+Namespace Pod: bitsiantech-uat
+
+How to copy CSV file from base machine to Pode:
+=> oc cp /home/bitsiantech/lpi_data.csv bitsiantech-uat/superset-postgres-b79999687-pzs4b:/ 
+
+=> oc cp /home/bitsiantech/gurrantor_data15nov.csv bitsiantech-uat/superset-postgres-b79999687-pzs4b:/
+
+=> oc cp /home/bitsiantech/case_status_data16nov.csv bitsiantech-uat/superset-postgres-b79999687-pzs4b:/
+
+=> oc cp /home/bitsiantech/NACH_Presentation_data16nov.csv bitsiantech-uat/superset-postgres-b79999687-pzs4b:/
+
+=> oc cp /home/bitsiantech/customer_score_data16nov.csv bitsiantech-uat/superset-postgres-b79999687-pzs4b:/
+
+
+
+How to insert data from .csv file to Inside table: 
+
+=> copy lpi_data(voucherdetailid,cancellationreferenceid,chartofaccountmasterid,creditamount,creditamountfcy,conversionrate,currency,debitamount,debitamountfcy,groupglid,groupgldescription,loanaccount,processbatchid,currencyconversionratetype,receiptpaymentid,status,transactionbranch,transactionreferencenumber,transactionstage,transactiontype,valuedate,vapid,voucherdate,sequencenumber,voucherheaderid,voucherid,vouchernumber,vouchertype,externalledgercode) from '/lpi_data.csv' delimiter ',' CSV;
+
+
+=>  copy gurrantor_data( APPLICATION_NUMBER,
+APPLICATION_CREATION,
+LOANID,
+LOAN_ACCOUNT_NO,
+PARTY_ROLE,
+CIFNUMBER,
+CUSTOMER_NUMBER,
+CUSTOMER_NAME,
+MEMBER_NAME,
+RELATIONSHIP,
+PHONE_NUMBER,
+ADDRESS,
+CITY,
+STATE,
+ZIPCODE) 
+from '/gurrantor_data15nov.csv' delimiter ',' CSV HEADER
+
+
+copy case_status(Application no,
+Loan Acount NO,
+CUSTOMER NAME,
+Case Category)
+from '/case_status_data16nov.csv' delimiter ',' CSV HEADER
+
+
+copy case_status(Application_no,
+Loan_Acount_NO,
+CUSTOMER_NAME,
+Case_Category)
+from '/case_status_data16nov.csv' delimiter ',' CSV HEADER
+
+
+copy nach_presentation_data( APPLICATION_NUMBER,
+APPLICATION_CREATION,
+LOANID,
+LOAN_ACCOUNT_NO,
+PARTY_ROLE,
+CIFNUMBER,
+CUSTOMER_NUMBER,
+CUSTOMER_NAME,
+MEMBER_NAME,
+RELATIONSHIP,
+PHONE_NUMBER,
+ADDRESS,
+CITY,
+STATE,
+ZIPCODE) 
+from '/gurrantor_data15nov.csv' delimiter ',' CSV HEADER;
+
+copy nach_presentation_data(Applicationno,LoanAccountNO,CUSTOMERNAME,ContactNumber,NACHPresentationAmount,UMRN,NACHBank,MandateMode,Status,Remark,BankingAmount,BankAccountNo,IFSCCode,BankAcholderName)from '/NACH_Presentation_data16nov.csv' delimiter ',' CSV HEADER;
+
+
+NACH_Presentation_data16nov.csv
+
+
+
+
+
+
+
+ALTER TABLE nach_presentation_data
+  ALTER COLUMN [BankA/cholderName] TYPE varchar(100)
+  USING [BankA/cholderName]::varchar(100);
+
+
+
+ copy customer_score(Agreementno,Customerscore) from '/customer_score_data16nov.csv' delimiter ',' CSV HEADER;
+
+
+
+

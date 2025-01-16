@@ -1,0 +1,54 @@
+import random
+
+class Player:
+    def __init__(self, name):
+        self.name = name
+        self.position = 0
+        self.has_started = False
+
+    def roll_dice(self):
+        return random.randint(1, 6)
+
+    def move(self, steps):
+        if not self.has_started and steps == 6:
+            self.has_started = True
+            print(f"{self.name} can start moving!")
+            self.position = 1
+        elif self.has_started:
+            self.position += steps
+            print(f"{self.name} moves {steps} steps to position {self.position}")
+
+        if self.position >= 50:  # Let's assume the board has 50 positions
+            print(f"{self.name} has won the game!")
+            return True
+        return False
+
+class LudoGame:
+    def __init__(self):
+        self.players = []
+    
+    def add_player(self, name):
+        player = Player(name)
+        self.players.append(player)
+
+    def play(self):
+        while True:
+            for player in self.players:
+                input(f"{player.name}'s turn. Press Enter to roll the dice.")
+                dice_roll = player.roll_dice()
+                print(f"{player.name} rolled a {dice_roll}")
+                
+                if player.move(dice_roll):
+                    print(f"Congratulations! {player.name} has won!")
+                    return
+
+if __name__ == "__main__":
+    print("Welcome to Ludo!")
+    game = LudoGame()
+    player_count = int(input("Enter the number of players (2 to 4): "))
+
+    for i in range(player_count):
+        name = input(f"Enter Player {i + 1}'s name: ")
+        game.add_player(name)
+
+    game.play()

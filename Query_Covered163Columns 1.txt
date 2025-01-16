@@ -1,0 +1,966 @@
+SELECT DISTINCT 
+    ro_mapping.ro AS "RO",
+    SUBSTRING("lms_portfolio_data"."AGREEMENT NO" FROM 6 FOR 2) AS "Region",
+    "lms_portfolio_data"."BRANCH NAME" AS "Branch",
+    "lms_portfolio_data"."APPLICATION NUMBER" AS "Application no",
+    "lms_portfolio_data"."AGREEMENT NO" AS "Loan Account Number",
+    "lms_portfolio_data"."CUSTOMER NAME" AS "Customer Name",
+    "lms_portfolio_data"."CUSTOMER MOBILE NO" AS "Contact Number",
+    ROUND("customer_score"."Customer score") AS "customerscore",
+    portfolio_extract_as_on_1."DAYS PAST DUE",
+    (portfolio_extract_as_on_1."DAYS PAST DUE" + 4) / 30 AS "Del_String",
+
+CASE 
+    WHEN coalesce("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT",0) = 0 AND "death_stock_legal"."Status" = 'CD' THEN 'X - BKT'
+    WHEN "xyz_bkt"."as_of_date_xyz" > 0 AND "xyz_bkt"."xyz_bkt_flag" = 'X' THEN 'Y'
+    WHEN "xyz_bkt"."as_of_date_xyz" > 0 AND "xyz_bkt"."xyz_bkt_flag" = 'Y' THEN 'Z'
+    ELSE '-' 
+END AS "XYZ BKT Flag",
+
+
+CASE 
+    WHEN coalesce("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT",0) = 0 AND "death_stock_legal"."Status" = 'CD' THEN "billing_pending"."INSTALLMENT_AMOUNT"
+    WHEN "xyz_bkt"."as_of_date_xyz" > 0 AND "xyz_bkt"."xyz_bkt_flag" = 'X-Bucket' THEN "xyz_bkt"."as_of_date_xyz"
+    WHEN "xyz_bkt"."as_of_date_xyz" > 0 AND "xyz_bkt"."xyz_bkt_flag" = 'Y-Bucket' THEN "xyz_bkt"."as_of_date_xyz"
+    ELSE 0 
+END AS "XYZ Opening",
+
+(CASE 
+    WHEN coalesce("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT",0) = 0 AND "death_stock_legal"."Status" = 'CD' THEN "billing_pending"."INSTALLMENT_AMOUNT"
+    WHEN "xyz_bkt"."as_of_date_xyz" > 0 AND "xyz_bkt"."xyz_bkt_flag" = 'X-Bucket' THEN "xyz_bkt"."as_of_date_xyz"
+    WHEN "xyz_bkt"."as_of_date_xyz" > 0 AND "xyz_bkt"."xyz_bkt_flag" = 'Y-Bucket' THEN "xyz_bkt"."as_of_date_xyz"
+    ELSE 0 
+END) - (
+    CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END) AS "As of date XYZ",
+
+CASE 
+    WHEN (     CASE WHEN "portfolio_extract_as_on_5"."LOAN STATUS" = 'A' AND "portfolio_extract_as_on_5"."ACCOUNTING CLASSIFICATION" = 'SUBSTD' 
+	THEN 'NPA' ELSE NULL END ) = 'NPA' THEN 'NPA'
+    WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" >= 56 THEN 'PNPA'
+    ELSE '-'
+END AS "Opening NPA/PNPA",	
+
+CASE WHEN (CASE 
+    WHEN (     CASE WHEN "portfolio_extract_as_on_5"."LOAN STATUS" = 'A' AND "portfolio_extract_as_on_5"."ACCOUNTING CLASSIFICATION" = 'SUBSTD' 
+	THEN 'NPA' ELSE NULL END ) = 'NPA' THEN 'NPA'
+    WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" >= 56 THEN 'PNPA'
+    ELSE '-'
+END) = '-' THEN 0 ELSE "portfolio_extract_as_on_1"."UNBILLED PRINCIPAL AMOUNT" + "portfolio_extract_as_on_1"."OVERDUE PRINCIPAL AMOUNT" 
+END AS "Opening POS NPA/PNPA",	
+
+    CASE 
+        WHEN (
+            CASE 
+                WHEN "portfolio_extract_t1"."LOAN STATUS" = 'C' THEN '-'
+                WHEN "portfolio_extract_t1"."ACCOUNTING CLASSIFICATION" = 'Regular' THEN '-'
+                ELSE 'NPA'
+            END
+        ) = 'NPA' THEN 'NPA'
+        WHEN CEIL("portfolio_extract_t1"."DAYS PAST DUE" / 30.0) >= 3 THEN 'PNPA'
+        ELSE '-'
+    END AS "As on date NPA/PNPA",
+
+    CASE 
+        WHEN "portfolio_extract_t1"."LOAN STATUS" = 'C' 
+            OR "portfolio_extract_t1"."ACCOUNTING CLASSIFICATION" = 'Regular' 
+            OR CEIL("portfolio_extract_t1"."DAYS PAST DUE" / 30.0) >= 3 
+        THEN 
+            "portfolio_extract_t1"."UNBILLED PRINCIPAL AMOUNT" + "portfolio_extract_t1"."OVERDUE PRINCIPAL AMOUNT"
+        ELSE 
+            0
+    END AS "As of Date POS NPA/PNPA",
+
+    "death_stock_legal"."Status" AS "Case Flag",
+
+    CASE 
+        WHEN "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" > 0 THEN 'OD'
+        ELSE 'CD' 
+    END AS "Opening Flag",
+
+    CASE 
+        WHEN "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" > 0 AND "billing_pending"."INSTALLMENT_AMOUNT" > 0 THEN 'OD+CD'
+        WHEN "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" > 0 AND "billing_pending"."INSTALLMENT_AMOUNT" <= 0 THEN 'OD'
+        ELSE 'CD'
+    END AS "Opening Sub_Flag",
+
+    (portfolio_extract_as_on_1."DAYS PAST DUE" + 4) / 30 AS "Opening Bucket",
+
+    "portfolio_extract_as_on_1"."DAYS PAST DUE" AS "Opening DPD",
+
+    "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" AS "Opening OD",
+
+    (
+        (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END) - 
+        CASE 
+            WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") - "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" >= 0
+            THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") - "billing_pending"."INSTALLMENT_AMOUNT"
+            ELSE 0 
+        END
+    ) AS "OD_Collected",
+
+    "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - (
+        (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END) - 
+        CASE 
+            WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") - "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" >= 0
+            THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") - "billing_pending"."INSTALLMENT_AMOUNT"
+            ELSE 0 
+        END
+    ) AS "OD_pending",
+
+    "billing_pending"."INSTALLMENT_AMOUNT" AS "Opening CD",
+
+    CASE 
+        WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") - "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" >= 0
+        THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") - "billing_pending"."INSTALLMENT_AMOUNT"
+        ELSE 0 
+    END AS "CD_Collected",
+
+    "billing_pending"."INSTALLMENT_AMOUNT" - 
+    (CASE 
+        WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") - "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" >= 0
+        THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") - "billing_pending"."INSTALLMENT_AMOUNT"
+        ELSE 0 
+    END 
+    )AS "CD_Pending",
+
+    "billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" AS "Opening collectable",
+
+    CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END AS "Collection",
+
+     ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END) AS "Pending",
+
+     CASE WHEN (
+     ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END)
+     ) = 0 THEN NOW() - INTERVAL '1 DAY' ELSE NULL END AS "Collection Date",
+
+CASE 
+    WHEN (     CASE WHEN (
+     ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END)
+     ) = 0 THEN NOW() - INTERVAL '1 DAY' ELSE NULL END) IS NOT NULL THEN 
+        (CASE 
+            WHEN (CASE 
+    WHEN "nach_presentation"."Status" = 'NACH Clear' THEN 'NACH Clear'
+    WHEN "nach_presentation"."Status" = 'NACH Bounce' THEN 'NACH Bounce'
+    ELSE '-'
+END) = 'Nach Clear' AND (     ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END)) = 0 THEN 'Nach Clear'
+            ELSE 'Field Collection'
+        END)
+    ELSE '-'
+END AS "Collection mode",
+
+CASE 
+    WHEN (
+     CASE WHEN (
+     ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END)
+     ) = 0 THEN NOW() - INTERVAL '1 DAY' ELSE NULL END) IS NOT NULL THEN
+        CASE 
+            WHEN (CASE 
+    WHEN "nach_presentation"."Status" = 'NACH Clear' THEN 'NACH Clear'
+    WHEN "nach_presentation"."Status" = 'NACH Bounce' THEN 'NACH Bounce'
+    ELSE '-'
+END) = 'Nach Clear' AND (     ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END)) = 0 THEN
+                CASE 
+                    WHEN "billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" = "nach_presentation"."Banking Amount" THEN 'Nach Clear'
+                    ELSE 'Nach Clear Short Amount'
+                END
+            WHEN (CASE 
+    WHEN "nach_presentation"."Status" = 'NACH Clear' THEN 'NACH Clear'
+    WHEN "nach_presentation"."Status" = 'NACH Bounce' THEN 'NACH Bounce'
+    ELSE '-'
+END) = 'Nach Bounce' AND (     ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END)) = 0 THEN 'Nach Bounce filed collection'
+            WHEN (CASE 
+    WHEN "nach_presentation"."Status" = 'NACH Clear' THEN 'NACH Clear'
+    WHEN "nach_presentation"."Status" = 'NACH Bounce' THEN 'NACH Bounce'
+    ELSE '-'
+END) = '-' AND (     ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END)) = 0 THEN 'Filed Collection'
+            ELSE NULL 
+        END
+    ELSE '-'
+END AS "Collection Status",
+
+
+CASE WHEN ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END) > 0 THEN 'FLOW' ELSE 'Collected' END AS "Status",
+
+
+CASE 
+    WHEN "nach_presentation"."Status" = 'NACH Clear' THEN 'NACH Clear'
+    WHEN "nach_presentation"."Status" = 'NACH Bounce' THEN 'NACH Bounce'
+    ELSE '-'
+END AS "Final NACH Status" , 
+
+    
+    (("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END) ) - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT" AS "Validation",
+
+    "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT" AS "Current Overdue",
+
+    "portfolio_extract_t1"."DAYS PAST DUE" AS "Current DPD",
+
+    CEIL("portfolio_extract_t1"."DAYS PAST DUE" / 30.0) AS "As on Date BKT",
+
+    "portfolio_extract_t1"."LOAN STATUS" AS "Case Status",     
+
+     CASE WHEN "portfolio_extract_as_on_1"."LOAN STATUS" = 'A' AND "portfolio_extract_as_on_1"."ACCOUNTING CLASSIFICATION" = 'SUBSTD' 
+	THEN 'NPA' ELSE NULL END AS "NPA AS ON 1st",
+
+     CASE WHEN "portfolio_extract_as_on_1"."LOAN STATUS" = 'A' AND "portfolio_extract_as_on_1"."ACCOUNTING CLASSIFICATION" = 'SUBSTD' 
+	THEN coalesce("portfolio_extract_as_on_1"."UNBILLED PRINCIPAL AMOUNT",0) + coalesce("portfolio_extract_as_on_1"."OVERDUE PRINCIPAL AMOUNT",0) 
+     END AS "NPA Opening POS",
+     
+     CASE WHEN "portfolio_extract_as_on_5"."LOAN STATUS" = 'A' AND "portfolio_extract_as_on_5"."ACCOUNTING CLASSIFICATION" = 'SUBSTD' 
+	THEN 'NPA' ELSE NULL END AS "NPA as on 5th",
+
+     CASE WHEN "portfolio_extract_as_on_5"."LOAN STATUS" = 'A' AND "portfolio_extract_as_on_5"."ACCOUNTING CLASSIFICATION" = 'SUBSTD' 
+	THEN coalesce("portfolio_extract_as_on_5"."UNBILLED PRINCIPAL AMOUNT",0) + coalesce("portfolio_extract_as_on_5"."OVERDUE PRINCIPAL AMOUNT",0) 
+     ELSE 0
+     END AS "POS as on 5th",
+
+     CASE WHEN "portfolio_extract_as_on_5"."LOAN STATUS" = 'A' AND "portfolio_extract_as_on_5"."ACCOUNTING CLASSIFICATION" = 'SUBSTD' 
+	THEN coalesce("portfolio_extract_as_on_5"."OVERDUE INSTALMENT AMOUNT",0) ELSE 0 END AS "NPA OD Inst. As on 5th",
+
+    CASE 
+        WHEN "portfolio_extract_t1"."LOAN STATUS" = 'C' THEN '-'
+        WHEN "portfolio_extract_t1"."ACCOUNTING CLASSIFICATION" = 'Regular' THEN '-'
+        ELSE 'NPA'
+    END AS "As on Date NPA",
+
+    CASE when (CASE 
+        WHEN "portfolio_extract_t1"."LOAN STATUS" = 'C' THEN '-'
+        WHEN "portfolio_extract_t1"."ACCOUNTING CLASSIFICATION" = 'Regular' THEN '-'
+        ELSE 'NPA'
+        END) = '-' THEN 0 ELSE "portfolio_extract_t1"."UNBILLED PRINCIPAL AMOUNT" + "portfolio_extract_t1"."OVERDUE PRINCIPAL AMOUNT" 
+    END AS "As on Date POS",
+
+     CASE WHEN (
+		CASE 
+        	WHEN "portfolio_extract_t1"."LOAN STATUS" = 'C' THEN '-'
+        	WHEN "portfolio_extract_t1"."ACCOUNTING CLASSIFICATION" = 'Regular' THEN '-'
+        	ELSE 'NPA'
+    		END ) = '-' THEN 0 ELSE 
+                (
+		("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     		(CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+		THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+		ELSE 0 END)
+                )  END AS "As on NPA OD Inst.",
+
+     (select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" = 'ASHCASHCAS'
+     ) AS "Receipt Report_Cash",
+
+     (select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" = 'QUECHEQUECHE'
+     ) AS "Receipt Report_Cheque",
+
+     (select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" = 'electronic fund transfer'
+     ) AS "Receipt Report_RTGS",
+
+     (select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" = 'ASHCASHCAS'
+     ) +
+     (select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" = 'QUECHEQUECHE'
+     ) +
+     (select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" = 'electronic fund transfer'
+     ) AS "Total Collection",
+
+    coalesce(("portfolio_extract_as_on_1"."BOUNCE CHARGE BILLED AMT" - "portfolio_extract_as_on_1"."BOUNCE CHARGE RECIEVED AMT"),0) AS "CBC Total",
+
+     (select coalesce(sum("Amount Allocated"),0) 
+           from collection_charge_allocation 
+           where "Loan Account" = lms_portfolio_data."AGREEMENT NO" and "Charge Code" = 8
+     ) AS "CBC Received",
+
+     CASE WHEN ((coalesce(("portfolio_extract_as_on_1"."BOUNCE CHARGE BILLED AMT" - "portfolio_extract_as_on_1"."BOUNCE CHARGE RECIEVED AMT"),0)) - 
+     (select coalesce(sum("Amount Allocated"),0) 
+           from collection_charge_allocation 
+           where "Loan Account" = lms_portfolio_data."AGREEMENT NO" and "Charge Code" = 8
+     )) < 0 THEN 0 
+     ELSE
+     (coalesce(("portfolio_extract_as_on_1"."BOUNCE CHARGE BILLED AMT" - "portfolio_extract_as_on_1"."BOUNCE CHARGE RECIEVED AMT"),0)) - 
+     ((select coalesce(sum("Amount Allocated"),0) 
+           from collection_charge_allocation 
+           where "Loan Account" = lms_portfolio_data."AGREEMENT NO" and "Charge Code" = 8
+     )) END AS "CBC Pending",
+
+    ("portfolio_extract_as_on_1"."LPI BILLED AMOUNT" - "portfolio_extract_as_on_1"."LPI RECEIVED AMOUNT") AS "LPI Total",
+
+     (select CASE WHEN coalesce((SUM("Credit Amount") - SUM("Debit Amount")),0) < 0 THEN 0 ELSE coalesce((SUM("Credit Amount") - SUM("Debit Amount")),0) END AS "LPI Received"  
+           from lpi_data 
+           where "Loan Account #" = lms_portfolio_data."AGREEMENT NO"
+     ) AS "LPI Received",
+
+     CASE WHEN (("portfolio_extract_as_on_1"."LPI BILLED AMOUNT" - "portfolio_extract_as_on_1"."LPI RECEIVED AMOUNT") -  
+	(select CASE WHEN coalesce((SUM("Credit Amount") - SUM("Debit Amount")),0) < 0 THEN 0 ELSE coalesce((SUM("Credit Amount") - SUM("Debit Amount")),0) END AS "LPI Received"  
+           from lpi_data 
+           where "Loan Account #" = lms_portfolio_data."AGREEMENT NO"
+     	)) < 0 THEN 0 
+     ELSE
+     ("portfolio_extract_as_on_1"."LPI BILLED AMOUNT" - "portfolio_extract_as_on_1"."LPI RECEIVED AMOUNT") -  
+	(select CASE WHEN coalesce((SUM("Credit Amount") - SUM("Debit Amount")),0) < 0 THEN 0 ELSE coalesce((SUM("Credit Amount") - SUM("Debit Amount")),0) END AS "LPI Received"  
+           from lpi_data 
+           where "Loan Account #" = lms_portfolio_data."AGREEMENT NO"
+     	) END  AS "LPI Pending",
+
+     ("portfolio_extract_as_on_1"."OTHER REC CHARGES BILLED AMT" - "portfolio_extract_as_on_1"."OTHER RECIEVED CHARGES RECD AMT") AS "Other Charges Total",
+
+     (select coalesce(sum("Amount Allocated"),0) 
+           from collection_charge_allocation 
+           where "Loan Account" = lms_portfolio_data."AGREEMENT NO" and "Charge Code" in (40001,40004,7011)
+     ) AS "Other Charges Received",
+
+    coalesce(("portfolio_extract_as_on_1"."OTHER REC CHARGES BILLED AMT" - "portfolio_extract_as_on_1"."OTHER RECIEVED CHARGES RECD AMT") -
+    (select coalesce(sum("Amount Allocated"),0) 
+           from collection_charge_allocation 
+           where "Loan Account" = lms_portfolio_data."AGREEMENT NO" and "Charge Code" in (40001,40004,7011)
+     ),0) AS "Other Charges Pending",
+
+CASE 
+    WHEN coalesce("nach_status"."Status",'-') != '-' THEN CONCAT('Nach', "nach_status"."Status")
+    WHEN (CASE WHEN "fe_pdc_data"."Nov_24" = 'YES' THEN 'PDC' ELSE '-' END) = 'PDC' THEN 'PDC'
+    ELSE 'Cash'
+END AS "Payment Mode",
+
+coalesce("bounce_count_data"."NACH Bounce Count",0) AS "NACH Bounce Count",
+
+CASE 
+    WHEN (CASE 
+	    WHEN coalesce("nach_status"."Status",'-') != '-' THEN CONCAT('Nach', "nach_status"."Status")
+    		WHEN (CASE WHEN "fe_pdc_data"."Nov_24" = 'YES' THEN 'PDC' ELSE '-' END) = 'PDC' THEN 'PDC'
+    	    ELSE 'Cash'
+	END
+	) like '%nach%' 
+     THEN
+        CASE 
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 0 AND 90 THEN '<90'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 91 AND 180 THEN '91-180'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 181 AND 240 THEN '181-240'
+            ELSE '240+'
+        END
+    ELSE NULL 
+END AS "DPD Buckting",
+
+     NULL AS "Payment report",
+
+GREATEST(LEAST((CASE 
+    WHEN ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END) - ((select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" in ('ASHCASHCAS','QUECHEQUECHE','electronic fund transfer')) 
++ ("portfolio_extract_t1"."OUTSTANDING EXCESS AMOUNT") + 0) < 0 THEN 0
+    ELSE ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END) - ((select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" in ('ASHCASHCAS','QUECHEQUECHE','electronic fund transfer'))
+ + ("portfolio_extract_t1"."OUTSTANDING EXCESS AMOUNT") + 0)
+END), (COALESCE("nach_status"."Amount",0))), ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END)) AS "NACH Present Amt",
+
+
+    "nach_presentation"."Status"  AS "NACH Present",
+
+    "nach_presentation"."Remark"  AS "Remark",
+
+    "nach_presentation"."Banking Amount"  AS "NACH Amount",
+
+    NULL AS "NACH Re-Present-1",
+
+    NULL AS "Remark-1",
+
+    NULL AS "NACH Amount-1",
+
+    NULL AS "NACH Re-Present-2",
+
+    NULL AS "Remark-2",
+
+    NULL AS "NACH Amount-2",
+
+    "lms_portfolio_data"."REPAYMENT FREQUENCY" AS "Repayment Frequency",
+
+    CASE WHEN extract('day' from "lms_portfolio_data"."FIRST INSTALMENT DATE"::date) = 5 THEN 'FEMI' ELSE 'NFEMI' END AS "Flag_FEMI_NFEMI",
+
+    "lms_portfolio_data"."SE ID" AS "Disbursment_SRE_ID",
+    
+    "lms_portfolio_data"."SE NAME" AS "Disbursment_SRE_Name",
+
+    "field_mapping"."SRO/CRO CODE" AS "SRO/CRO CODE",
+    "field_mapping"."SRO/CRO Name" AS "SRO/CRO Name",
+    "field_mapping"."Role" AS "Role",
+    "field_mapping"."JTM/TM Code" AS "JTM/TM Code",
+    "field_mapping"."JTM/TM Name" AS "JTM/TM Name",
+    "field_mapping"."PM Code" AS "PM Code",
+    "field_mapping"."PM Name" AS "PM Name",
+    "field_mapping"."AM Code" AS "AM Code",
+    "field_mapping"."AM Name" AS "AM Name",
+    "field_mapping"."Area Name" AS "Area Name",
+    "field_mapping"."Senior AM Code" AS "Senior AM Code",
+    "field_mapping"."Senior Area Manager" AS "Senior Area Manager",
+    "field_mapping"."RPM Code" AS "RPM Code",
+    "field_mapping"."RPM Name" AS "RPM Name",
+    "field_mapping"."TM_Loacation" AS "TM_Loacation",
+    "field_mapping"."SRO_Location" AS "SRO_Location",
+
+    COALESCE(LEFT("lms_portfolio_data"."DEALER", POSITION('_' IN "lms_portfolio_data"."DEALER") - 1), '-') AS "Dealer Code",
+
+    "lms_portfolio_data"."DEALER" AS "Dealer",
+    "lms_portfolio_data"."ASSET MODEL" AS "ASSET MODEL",
+    "lms_portfolio_data"."REGISTRATION NUMBER" AS "REGISTRATION NUMBER",
+    "lms_portfolio_data"."CHASIS NUMBER" AS "CHASIS NUMBER",
+    "lms_portfolio_data"."DISBURSED AMOUNT" AS "Disbursal Amount",
+    "lms_portfolio_data"."DISBURSAL LAST DATE" AS "DISBURSAL DATE",
+    "lms_portfolio_data"."FIRST INSTALMENT DATE" AS "First installment date",
+    "lms_portfolio_data"."TENURE" AS "Tenure",
+    "lms_portfolio_data"."ADDRESS" AS "Address",
+    "lms_portfolio_data"."ZIPCODE" AS "Pin Code",
+    "lms_portfolio_data"."REFERENCE NAME1" AS "Referance1",
+    "lms_portfolio_data"."REFERENCE PHONE NO1" AS "Ref 1 Mobile No.",
+    "lms_portfolio_data"."REFERENCE NAME2" AS "Referance2",
+    "lms_portfolio_data"."REFERENCE PHONE NO2" AS "Ref 2 Mobile No.",
+
+    "co_applicant_data"."CUSTOMER_NAME" AS "Co Applicant",
+    "co_applicant_data"."CUSTOMER_NUMBER" AS "Mobile number",
+    "co_applicant_data"."ADDRESS" AS "Address3",
+
+    "gurrantor_data"."CUSTOMER_NAME" AS "Gurantor",
+    "gurrantor_data"."PHONE_NUMBER" AS "Mobile number4",
+    "gurrantor_data"."ADDRESS" AS "Address5",
+
+    coalesce("nach_status"."Status",'-') As "NACH Status",
+    COALESCE("nach_status"."Amount",0) As "Mandate Amount",
+    "nach_status"."Bank Name" As "Bank Name",
+    "nach_status"."Bank Account No" As "Account Number",
+    "nach_status"."Bank A/c holder Name" As "Account Holder Name",
+    "nach_status"."UMRN" As "UMRN",
+
+     CASE WHEN "fe_pdc_data"."Nov_24" = 'YES' THEN 'PDC' ELSE '-' END AS "PDC",
+
+    "portfolio_extract_as_on_1"."ASSET CLASSIFICATION" AS "Opening Asset Classification",
+
+    "portfolio_extract_t1"."ACCOUNTING CLASSIFICATION" AS "As On Date Account Classification",
+
+     "case_status"."Case Category" AS "Green Case",
+
+     "portfolio_extract_as_on_1"."UNBILLED PRINCIPAL AMOUNT" + "portfolio_extract_as_on_1"."OVERDUE PRINCIPAL AMOUNT" AS "Opening POS",
+
+     "portfolio_extract_as_on_1"."UNBILLED PRINCIPAL AMOUNT" + "portfolio_extract_as_on_1"."OVERDUE PRINCIPAL AMOUNT" AS "As On Date POS",
+
+     (select coalesce(sum("Transaction Amount"),0) 
+           from loan_receipt_details 
+           where "Loan Account No" = lms_portfolio_data."AGREEMENT NO" and "Authorization Date" != NULL
+     ) AS "MTD Call",
+
+    ( (CASE WHEN coalesce(("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT"),0) > 0 
+	THEN coalesce(("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT"),0)
+	ELSE 0 END) - (select coalesce(sum("Transaction Amount"),0) 
+           from loan_receipt_details 
+           where "Loan Account No" = lms_portfolio_data."AGREEMENT NO" and "Authorization Date" != NULL ) ) AS "FTD",
+
+CASE WHEN "portfolio_extract_as_on_5"."LOAN STATUS" = 'A' AND "portfolio_extract_as_on_5"."ACCOUNTING CLASSIFICATION" = 'SUBSTD' 
+	THEN (select coalesce(sum("Transaction Amount"),0) 
+           from loan_receipt_details 
+           where "Loan Account No" = lms_portfolio_data."AGREEMENT NO" and "Authorization Date" != NULL
+     )
+ELSE 0 END AS "NPA MTD Coll",
+
+CASE WHEN "portfolio_extract_as_on_5"."LOAN STATUS" = 'A' AND "portfolio_extract_as_on_5"."ACCOUNTING CLASSIFICATION" = 'SUBSTD' 
+	THEN ( (CASE WHEN coalesce(("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT"),0) > 0 
+	THEN coalesce(("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT"),0)
+	ELSE 0 END) - (select coalesce(sum("Transaction Amount"),0) 
+           from loan_receipt_details 
+           where "Loan Account No" = lms_portfolio_data."AGREEMENT NO" and "Authorization Date" != NULL ) )
+ELSE 0 END AS "NPA FTD Coll",
+
+CASE
+    WHEN (CASE 
+    		WHEN coalesce("nach_status"."Status",'-') != '-' THEN CONCAT('Nach', "nach_status"."Status")
+    		WHEN (CASE WHEN "fe_pdc_data"."Nov_24" = 'YES' THEN 'PDC' ELSE '-' END) = 'PDC' THEN 'PDC'
+    		ELSE 'Cash'
+    	 END) = 'Cash' THEN 'cash payment mode'
+    WHEN "death_stock_legal"."Status" = 'death case' THEN 'not eligible death case'
+    WHEN "death_stock_legal"."Status" = 'stock' THEN 'not eligible stock case'
+    WHEN "portfolio_extract_t1"."LOAN STATUS" = 'C' THEN 'not eligible loan close'
+    WHEN coalesce("portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT",0) > 0 THEN 'not eligible od case'
+    WHEN (coalesce("billing_pending"."INSTALLMENT_AMOUNT",0) + coalesce("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT",0)) <> coalesce("nach_presentation"."Banking Amount",0) THEN 'not eligible short mandate case'
+    WHEN (CASE WHEN "fe_pdc_data"."Nov_24" = 'YES' THEN 'PDC' ELSE '-' END) = 'PDC' THEN 'PDC paymnet mode'
+    WHEN (CASE 
+    WHEN (CASE 
+	    WHEN coalesce("nach_status"."Status",'-') != '-' THEN CONCAT('Nach', "nach_status"."Status")
+    		WHEN (CASE WHEN "fe_pdc_data"."Nov_24" = 'YES' THEN 'PDC' ELSE '-' END) = 'PDC' THEN 'PDC'
+    	    ELSE 'Cash'
+	END
+	) like '%nach%' 
+     THEN
+        CASE 
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 0 AND 90 THEN '<90'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 91 AND 180 THEN '91-180'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 181 AND 240 THEN '181-240'
+            ELSE '240+'
+        END
+    ELSE NULL 
+END) = '<90' AND "NACH Bounce Count" BETWEEN 0 AND 2 THEN 'Eligible For Presentation'
+    WHEN (CASE 
+    WHEN (CASE 
+	    WHEN coalesce("nach_status"."Status",'-') != '-' THEN CONCAT('Nach', "nach_status"."Status")
+    		WHEN (CASE WHEN "fe_pdc_data"."Nov_24" = 'YES' THEN 'PDC' ELSE '-' END) = 'PDC' THEN 'PDC'
+    	    ELSE 'Cash'
+	END
+	) like '%nach%' 
+     THEN
+        CASE 
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 0 AND 90 THEN '<90'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 91 AND 180 THEN '91-180'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 181 AND 240 THEN '181-240'
+            ELSE '240+'
+        END
+    ELSE NULL 
+END) = '<90' AND "NACH Bounce Count" BETWEEN 3 AND 5 THEN 'Required NSH Approval'
+    WHEN (CASE 
+    WHEN (CASE 
+	    WHEN coalesce("nach_status"."Status",'-') != '-' THEN CONCAT('Nach', "nach_status"."Status")
+    		WHEN (CASE WHEN "fe_pdc_data"."Nov_24" = 'YES' THEN 'PDC' ELSE '-' END) = 'PDC' THEN 'PDC'
+    	    ELSE 'Cash'
+	END
+	) like '%nach%' 
+     THEN
+        CASE 
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 0 AND 90 THEN '<90'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 91 AND 180 THEN '91-180'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 181 AND 240 THEN '181-240'
+            ELSE '240+'
+        END
+    ELSE NULL 
+END) = '91-180' AND "NACH Bounce Count" BETWEEN 0 AND 2 THEN 'Eligible For Presentation'
+    WHEN (CASE 
+    WHEN (CASE 
+	    WHEN coalesce("nach_status"."Status",'-') != '-' THEN CONCAT('Nach', "nach_status"."Status")
+    		WHEN (CASE WHEN "fe_pdc_data"."Nov_24" = 'YES' THEN 'PDC' ELSE '-' END) = 'PDC' THEN 'PDC'
+    	    ELSE 'Cash'
+	END
+	) like '%nach%' 
+     THEN
+        CASE 
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 0 AND 90 THEN '<90'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 91 AND 180 THEN '91-180'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 181 AND 240 THEN '181-240'
+            ELSE '240+'
+        END
+    ELSE NULL 
+END) = '91-180' AND "NACH Bounce Count" BETWEEN 3 AND 5 THEN 'Required NSH Approval'
+    WHEN (CASE 
+    WHEN (CASE 
+	    WHEN coalesce("nach_status"."Status",'-') != '-' THEN CONCAT('Nach', "nach_status"."Status")
+    		WHEN (CASE WHEN "fe_pdc_data"."Nov_24" = 'YES' THEN 'PDC' ELSE '-' END) = 'PDC' THEN 'PDC'
+    	    ELSE 'Cash'
+	END
+	) like '%nach%' 
+     THEN
+        CASE 
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 0 AND 90 THEN '<90'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 91 AND 180 THEN '91-180'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 181 AND 240 THEN '181-240'
+            ELSE '240+'
+        END
+    ELSE NULL 
+END) IN ('181-240', '240+') AND "NACH Bounce Count" BETWEEN 0 AND 5 THEN 'Not Eligible for Presentation'
+    ELSE NULL 
+END AS "NACH Presentation Eligibility",
+
+
+    (now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30 AS "MOB" ,
+
+    CASE 
+    	WHEN ((now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30) <= 6 AND "lms_portfolio_data"."REPAYMENT FREQUENCY" = 'Monthly' THEN 'SRO'
+    	WHEN ((now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30) <= 12 AND "lms_portfolio_data"."REPAYMENT FREQUENCY" = 'Quarterly' THEN 'SRO'
+    	WHEN ((now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30) <= 12 AND "lms_portfolio_data"."REPAYMENT FREQUENCY" = 'Half Yearly' THEN 'SRO'
+    ELSE '-'
+    END AS "Allocation",
+
+    coalesce("portfolio_extract_t1"."NUMBER OF INSTALLMENTS",0) AS "Number Of Installments",
+    coalesce("portfolio_extract_t1"."NUMBER OF OVERDUE INSTALLMENT",0) AS "Number Of Overdue Installment",
+    coalesce("portfolio_extract_t1"."BALANCE INSTALLMENTS",0) AS "Balance Installments",
+
+    (coalesce("portfolio_extract_t1"."NUMBER OF INSTALLMENTS",0) - coalesce("portfolio_extract_t1"."NUMBER OF OVERDUE INSTALLMENT",0)) 
+    - coalesce("portfolio_extract_t1"."BALANCE INSTALLMENTS",0) AS "Paid Installments",
+   
+    NULL AS "EXTRA",
+
+    (select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" = 'ASHCASHCAS'
+     ) +
+     (select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" = 'QUECHEQUECHE'
+     ) +
+     (select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" = 'electronic fund transfer'
+     )    AS "Open entry",
+
+    "portfolio_extract_t1"."OUTSTANDING EXCESS AMOUNT" AS "OUTSTANDING_EXCESS_AMOUNT",
+
+
+CASE
+    WHEN (CASE 
+    		WHEN coalesce("nach_status"."Status",'-') != '-' THEN CONCAT('Nach', "nach_status"."Status")
+    		WHEN (CASE WHEN "fe_pdc_data"."Nov_24" = 'YES' THEN 'PDC' ELSE '-' END) = 'PDC' THEN 'PDC'
+    		ELSE 'Cash'
+    	 END) = 'Cash' THEN 'cash payment mode'
+    WHEN "death_stock_legal"."Status" = 'death case' THEN 'not eligible death case'
+    WHEN "death_stock_legal"."Status" = 'stock' THEN 'not eligible stock case'
+    WHEN "portfolio_extract_t1"."LOAN STATUS" = 'C' THEN 'not eligible loan close'
+    WHEN coalesce("portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT",0) > 0 THEN 'not eligible od case'
+    WHEN (coalesce("billing_pending"."INSTALLMENT_AMOUNT",0) + coalesce("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT",0)) <> coalesce("nach_presentation"."Banking Amount",0) THEN 'not eligible short mandate case'
+    WHEN (CASE WHEN "fe_pdc_data"."Nov_24" = 'YES' THEN 'PDC' ELSE '-' END) = 'PDC' THEN 'PDC paymnet mode'
+    WHEN (CASE 
+    WHEN (CASE 
+	    WHEN coalesce("nach_status"."Status",'-') != '-' THEN CONCAT('Nach', "nach_status"."Status")
+    		WHEN (CASE WHEN "fe_pdc_data"."Nov_24" = 'YES' THEN 'PDC' ELSE '-' END) = 'PDC' THEN 'PDC'
+    	    ELSE 'Cash'
+	END
+	) like '%nach%' 
+     THEN
+        CASE 
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 0 AND 90 THEN '<90'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 91 AND 180 THEN '91-180'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 181 AND 240 THEN '181-240'
+            ELSE '240+'
+        END
+    ELSE NULL 
+END) = '<90' AND "NACH Bounce Count" BETWEEN 0 AND 2 THEN 'Eligible For Presentation'
+    WHEN (CASE 
+    WHEN (CASE 
+	    WHEN coalesce("nach_status"."Status",'-') != '-' THEN CONCAT('Nach', "nach_status"."Status")
+    		WHEN (CASE WHEN "fe_pdc_data"."Nov_24" = 'YES' THEN 'PDC' ELSE '-' END) = 'PDC' THEN 'PDC'
+    	    ELSE 'Cash'
+	END
+	) like '%nach%' 
+     THEN
+        CASE 
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 0 AND 90 THEN '<90'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 91 AND 180 THEN '91-180'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 181 AND 240 THEN '181-240'
+            ELSE '240+'
+        END
+    ELSE NULL 
+END) = '<90' AND "NACH Bounce Count" BETWEEN 3 AND 5 THEN 'Required NSH Approval'
+    WHEN (CASE 
+    WHEN (CASE 
+	    WHEN coalesce("nach_status"."Status",'-') != '-' THEN CONCAT('Nach', "nach_status"."Status")
+    		WHEN (CASE WHEN "fe_pdc_data"."Nov_24" = 'YES' THEN 'PDC' ELSE '-' END) = 'PDC' THEN 'PDC'
+    	    ELSE 'Cash'
+	END
+	) like '%nach%' 
+     THEN
+        CASE 
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 0 AND 90 THEN '<90'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 91 AND 180 THEN '91-180'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 181 AND 240 THEN '181-240'
+            ELSE '240+'
+        END
+    ELSE NULL 
+END) IN ('91-180','181-240') AND "NACH Bounce Count" BETWEEN 0 AND 5 THEN 'Required NSH Approval'
+    WHEN (CASE 
+    WHEN (CASE 
+	    WHEN coalesce("nach_status"."Status",'-') != '-' THEN CONCAT('Nach', "nach_status"."Status")
+    		WHEN (CASE WHEN "fe_pdc_data"."Nov_24" = 'YES' THEN 'PDC' ELSE '-' END) = 'PDC' THEN 'PDC'
+    	    ELSE 'Cash'
+	END
+	) like '%nach%' 
+     THEN
+        CASE 
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 0 AND 90 THEN '<90'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 91 AND 180 THEN '91-180'
+            WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" BETWEEN 181 AND 240 THEN '181-240'
+            ELSE '240+'
+        END
+    ELSE NULL 
+END) = '240+' AND "NACH Bounce Count" BETWEEN 0 AND 5 THEN 'Required NSH Approval'
+    WHEN 
+     ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END) = 0 then 'Collection Done'
+    ELSE NULL 
+END AS "NACH Re-Presentation Eligibility",
+
+
+    NULL AS "Requre Amt for Below 30",
+
+    NULL AS "Requre Amt for Below 60",
+   
+   CASE 
+    WHEN 
+	(CASE 
+        WHEN "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" > 0 THEN 'OD'
+        ELSE 'CD' 
+    	END) = 'CD' THEN 
+        CASE WHEN "billing_pending"."INSTALLMENT_AMOUNT" = (CASE 
+        WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") - "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" >= 0
+        THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") - "billing_pending"."INSTALLMENT_AMOUNT"
+        ELSE 0 
+        END) THEN 'Collected' ELSE 'Flow' END
+    ELSE '-'
+    END AS "X BKT Pending",
+
+    CASE 
+    WHEN coalesce("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT",0) > 0 THEN
+        CASE 
+            WHEN coalesce("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT",0) - ((
+        (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END) - 
+        CASE 
+            WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") - "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" >= 0
+            THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") - "billing_pending"."INSTALLMENT_AMOUNT"
+            ELSE 0 
+        END
+    )) <= 0 THEN 'Collected'
+            ELSE 'Flow'
+        END
+    ELSE '-' END AS "OD Pending",
+
+CASE 
+    WHEN coalesce("billing_pending"."INSTALLMENT_AMOUNT",0) > 0 THEN 
+        CASE WHEN coalesce("billing_pending"."INSTALLMENT_AMOUNT",0) = (CASE 
+        WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") - "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" >= 0
+        THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") - "billing_pending"."INSTALLMENT_AMOUNT"
+        ELSE 0 
+    END) THEN 'Collected' ELSE 'Flow' END
+    ELSE '-' END AS "CD Pending",
+
+CASE 
+    WHEN (coalesce("billing_pending"."INSTALLMENT_AMOUNT",0)  + coalesce("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT",0)) > 0 THEN
+        CASE 
+            WHEN (coalesce("billing_pending"."INSTALLMENT_AMOUNT",0)  + coalesce("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT",0)) - 
+                (CASE WHEN (coalesce("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT",0) - coalesce("portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT",0)) > 0 
+	THEN (coalesce("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT",0) - coalesce("portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT",0))
+	ELSE 0 END) <= 0 THEN 'Collected'
+            ELSE 'Flow'
+        END
+    ELSE '-'
+END AS "Total Pending",
+
+CASE WHEN (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END) > 0 THEN 'ok' ELSE '-' END 
+AS "For CD_OD",
+
+CASE 
+    WHEN (CASE WHEN "portfolio_extract_as_on_5"."LOAN STATUS" = 'A' AND "portfolio_extract_as_on_5"."ACCOUNTING CLASSIFICATION" = 'SUBSTD' 
+	THEN 'NPA' ELSE NULL END) = 'NPA' AND coalesce(("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT"),0) > 0 THEN 'Collected'
+    ELSE '-'
+END AS "For NPA Collection",
+
+CASE WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" = 0 THEN '0'
+WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" <=30 THEN '1-30'
+WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" <=60 THEN '31-60'
+WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" <=90 THEN '61-90'
+WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" <=120 THEN '91-120'
+WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" <=150 THEN '121-150'
+WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" <=180 THEN '151-180'
+WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" <=210 THEN '181-210'
+WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" <=240 THEN '211-240'
+WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" <=270 THEN '241-270'
+WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" <=300 THEN '271-300'
+WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" <=330 THEN '301-330'
+WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" <=360 THEN '331-360'
+WHEN "portfolio_extract_as_on_1"."DAYS PAST DUE" >=360 THEN '360+' END AS "Open BKT-C",
+
+CASE WHEN "portfolio_extract_t1"."DAYS PAST DUE" = 0 THEN '0'
+WHEN "portfolio_extract_t1"."DAYS PAST DUE" <=30 THEN '1-30'
+WHEN "portfolio_extract_t1"."DAYS PAST DUE" <=60 THEN '31-60'
+WHEN "portfolio_extract_t1"."DAYS PAST DUE" <=90 THEN '61-90'
+WHEN "portfolio_extract_t1"."DAYS PAST DUE" <=120 THEN '91-120'
+WHEN "portfolio_extract_t1"."DAYS PAST DUE" <=150 THEN '121-150'
+WHEN "portfolio_extract_t1"."DAYS PAST DUE" <=180 THEN '151-180'
+WHEN "portfolio_extract_t1"."DAYS PAST DUE" <=210 THEN '181-210'
+WHEN "portfolio_extract_t1"."DAYS PAST DUE" <=240 THEN '211-240'
+WHEN "portfolio_extract_t1"."DAYS PAST DUE" <=270 THEN '241-270'
+WHEN "portfolio_extract_t1"."DAYS PAST DUE" <=300 THEN '271-300'
+WHEN "portfolio_extract_t1"."DAYS PAST DUE" <=330 THEN '301-330'
+WHEN "portfolio_extract_t1"."DAYS PAST DUE" <=360 THEN '331-360'
+WHEN "portfolio_extract_t1"."DAYS PAST DUE" >=360 THEN '360+' END AS "As On Date BKT-C",
+
+CASE WHEN ((now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30) <=3 THEN '1-3'
+WHEN ((now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30) <=6 THEN '3-6'
+WHEN ((now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30) <=9 THEN '6-9'
+WHEN ((now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30) <=12 THEN '9-12'
+WHEN ((now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30) <=15 THEN '12-15'
+WHEN ((now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30) <=18 THEN '15-18'
+WHEN ((now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30) <=21 THEN '18-21'
+WHEN ((now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30) <=24 THEN '21-24'
+WHEN ((now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30) <=27 THEN '24-27'
+WHEN ((now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30) <=30 THEN '27-30'
+WHEN ((now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30) <=33 THEN '31-33'
+WHEN ((now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30) <=36 THEN '33-36'
+WHEN ((now()::date - "lms_portfolio_data"."DISBURSAL LAST DATE"::date)/30) >=36 THEN '36+' END AS "MOB-C",
+
+CASE WHEN "portfolio_extract_t1"."DAYS PAST DUE" <=30 THEN '-'
+WHEN "portfolio_extract_t1"."DAYS PAST DUE" <=60 THEN '30+'
+WHEN "portfolio_extract_t1"."DAYS PAST DUE" <=90 THEN '60+'
+WHEN "portfolio_extract_t1"."DAYS PAST DUE" >90 THEN '90+' END AS "Current Overdue BKT",
+
+CASE WHEN CEIL("portfolio_extract_t1"."DAYS PAST DUE" / 30.0)=0 THEN 'Normlize'
+WHEN (portfolio_extract_as_on_1."DAYS PAST DUE" + 4) / 30 = CEIL("portfolio_extract_t1"."DAYS PAST DUE" / 30.0) THEN 'Stab'
+WHEN (portfolio_extract_as_on_1."DAYS PAST DUE" + 4) / 30 < CEIL("portfolio_extract_t1"."DAYS PAST DUE" / 30.0) THEN 'Roll Forward'
+WHEN (portfolio_extract_as_on_1."DAYS PAST DUE" + 4) / 30 > CEIL("portfolio_extract_t1"."DAYS PAST DUE" / 30.0) THEN 'Roll Back'
+END AS "BKT Movements",
+
+CASE WHEN 
+(
+     (select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" = 'ASHCASHCAS'
+     ) +
+     (select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" = 'QUECHEQUECHE'
+     ) +
+     (select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" = 'electronic fund transfer'
+     ) 
+) = 0 THEN '-' ELSE 'Open Receipt' END AS "Receipt Count",
+
+     (select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" = 'ASHCASHCAS'
+     ) +
+     (select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" = 'QUECHEQUECHE'
+     ) +
+     (select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" = 'electronic fund transfer'
+     ) AS "Receipt Value",
+
+    CASE 
+    	WHEN "field_mapping"."Role" = 'Collection Officer' THEN 'Collection Team'
+    	WHEN "field_mapping"."Role" = 'Portfolio Manager' THEN 'Collection Team'
+    ELSE 'Sales Team'
+    END AS "Team",
+
+   NULL AS "Requre Amt for Below 90",
+
+CASE 
+    WHEN ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END) - ((select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" in ('ASHCASHCAS','QUECHEQUECHE','electronic fund transfer')) 
++ ("portfolio_extract_t1"."OUTSTANDING EXCESS AMOUNT") + 0) < 0 THEN 0
+    ELSE ("billing_pending"."INSTALLMENT_AMOUNT"  + "portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT") - 
+     (CASE WHEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT") > 0 
+	THEN ("portfolio_extract_as_on_1"."OVERDUE INSTALMENT AMOUNT" - "portfolio_extract_t1"."OVERDUE INSTALMENT AMOUNT")
+	ELSE 0 END) - ((select coalesce(sum("INSTRUMENT_AMOUNT"),0) 
+           from receipt_pending_action 
+           where "LOAN_ACCOUNT_NUMBER" = lms_portfolio_data."AGREEMENT NO" and "PAYMENT_MODE" in ('ASHCASHCAS','QUECHEQUECHE','electronic fund transfer'))
+ + ("portfolio_extract_t1"."OUTSTANDING EXCESS AMOUNT") + 0)
+END AS "Manual Pending",
+
+(select "Johari" 
+           from "mapping_johari_data" 
+           where "SRO/CRO CODE"::text = "field_mapping"."SRO/CRO CODE"::text
+     ) AS "Johari",
+
+"portfolio_extract_t1"."PRODUCT NAME" AS "Product"
+into dataset   
+FROM lms_portfolio_data 
+LEFT JOIN ro_mapping
+    ON "lms_portfolio_data"."BRANCH NAME" = ro_mapping.branch_name
+LEFT JOIN customer_score
+    ON customer_score."Agreement no." = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN portfolio_extract_as_on_1
+    ON portfolio_extract_as_on_1."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN portfolio_extract_t1
+    ON portfolio_extract_t1."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN death_stock_legal
+    ON "death_stock_legal"."LoanAccountNumber" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN billing_pending
+    ON "billing_pending"."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN nach_presentation 
+    ON "nach_presentation"."Loan Account NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN nach_status
+    ON "nach_status"."Unique Reference Number" = "lms_portfolio_data"."APPLICATION NUMBER"
+LEFT JOIN field_mapping
+    ON "field_mapping"."Loan Acount NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN co_applicant_data
+    ON "co_applicant_data"."LOAN_ACCOUNT_NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN gurrantor_data
+    ON "gurrantor_data"."LOAN_ACCOUNT_NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN fe_pdc_data
+    ON "fe_pdc_data"."Loan Number" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN case_status
+    ON "case_status"."Loan Acount NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN xyz_bkt
+    ON "xyz_bkt"."loan_account_number" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN portfolio_extract_as_on_5
+    ON portfolio_extract_as_on_5."LOAN ACCOUNT NO" = "lms_portfolio_data"."AGREEMENT NO"
+LEFT JOIN bounce_count_data
+    ON bounce_count_data."Loan Account Number" = "lms_portfolio_data"."AGREEMENT NO";
+
+
+
+
+
+
+
+
+
+
+
+

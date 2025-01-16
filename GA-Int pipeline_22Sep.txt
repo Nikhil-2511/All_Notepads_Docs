@@ -1,0 +1,95 @@
+
+def now = new Date()
+string rm_backup = 'rm -rf /home/ubuntu/buildbackup/*'
+string mv1_metric_code = 'mv /home/ubuntu/redis-integration-1.0.0.jar /home/ubuntu/buildbackup/redis-integration-1.0.0_' + now.format("yyMMdd_HHmm", TimeZone.getTimeZone('UTC')) + ".jar"
+string mv2_metric_code = 'mv /home/ubuntu/latest_build/redis-integration-1.0.0.jar /home/ubuntu/.'
+string pid = '/home/ubuntu/jenkins_script/stop_processJa.sh'
+string docker_container = 'ga-jar'
+string docker_path = '/jar_files1/ubuntu/'
+string docker_path2 = '/jar_files1/ubuntu/jenkins_script'
+
+pipeline {
+    agent any
+    tools {
+        maven "maven3"
+        jdk "JDK"
+    }
+    
+    stages {
+        stage("Clone the Code") {
+            steps {
+                script {
+                    def selectedOption = env.Git_Repo
+                    def branch_name = selectedOption - "refs/heads/"
+                    echo branch_name
+                    echo "Selected option: ${branch_name}"
+                    git branch: branch_name, credentialsId: 'clone_code', url: 'https://github.com/thedonedeal/integration'
+                }
+            }
+        }
+
+        stage("Build") {
+            steps {
+                sh 'mvn clean install -DskipTests'
+            }
+        }
+        
+        stage("Copy the Code from Jenkins Server to Apps Server") {
+            steps {
+                echo "Copy the company-metric code from Jenkins server to Apps server"
+                sh "scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem /var/lib/jenkins/workspace/Docker_Company-metrics_backend-testing/ga-integration/target/redis-integration-1.0.0.jar ubuntu@172.31.39.246:/home/ubuntu/latest_build"
+            }
+        }
+
+        stage("Moving the Old Code") {
+            steps {
+                sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 /bin/bash -c '\"${mv1_metric_code}\"'"
+            }
+        }
+
+        stage("Copy to Docker Container") {
+            steps {
+                script {
+                    echo "Copying the latest code to Docker container"
+                    sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 docker cp /home/ubuntu/latest_build/redis-integration-1.0.0.jar ${docker_container}:${docker_path}/"
+                }
+            }
+        }
+        stage("Killing the Process") {
+            steps {
+                script {
+                    sh "scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem /var/lib/jenkins/workspace/stop_processJa.sh ubuntu@172.31.39.246:/home/ubuntu/jenkins_script/"
+                    sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 docker exec -d ${docker_container} /jar_files1/ubuntu/run-app.sh '/bin/bash -c \"${pid}\"'"
+                    sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 docker cp /home/ubuntu/jenkins_script/stop_processJa.sh ${docker_container}:${docker_path2}/"
+                    sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 docker exec -d ${docker_container} /jar_files1/ubuntu/jenkins_script/stop_processJa.sh"
+                    echo "Removed the old code from buildbackup folder"
+                    sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 /bin/bash -c '\"${rm_backup}\"'"
+                }
+            }
+        }
+         stage("Moving the Latest Code") {
+            steps {
+                sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 /bin/bash -c '\"${mv2_metric_code}\"'"
+            }
+        }
+
+        stage("Restart Docker Container") {
+            steps {
+                script {
+                    echo "Restarting Docker container"
+                    sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 docker restart ${docker_container}"
+                }
+            }
+        }
+
+        stage("Running the Process") {
+            steps {
+                //sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.45.123 '/usr/share/java/current/bin/java -jar -Dspring.datasource.url=jdbc:mysql://172.18.0.2/done_deal_uat -Dspring.datasource.username=ddqa -Dspring.datasource.password=ddqa@123 /home/ubuntu/ga-integration-1.0.0.jar &> /dev/null & '"
+            //sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 docker exec -d ${docker_container} java -jar -Dspring.datasource.url=jdbc:mysql://172.18.0.2/done_deal_uat -Dspring.datasource.username=ddqa -Dspring.datasource.password=ddqa@123 -Dgoogle_redirect_uri=ec2-52-66-207-72.ap-south-1.compute.amazonaws.com:3000/analytics -Dgoogle_client_id=1086275954467-upginoic55b0abc398mb4bkd12g0u153.apps.googleusercontent.com -Dgoogle_client_secret=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 -Dgoogle.application.credentials=/jar_files1/ubuntu/GA-Project5-cc828859ec28.json /jar_files1/ubuntu/ga-integration-1.0.0.jar &> /dev/null & "
+            //sh "ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.45.123 sudo docker exec -d ${docker_container} /jar_files1/ubuntu/run-app.sh  > /dev/null &" 
+            sh '''ssh -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem ubuntu@172.31.39.246 "docker exec -d ga-jar /bin/bash -c 'cd /jar_files1/ubuntu && ./run-app.sh'"'''
+                
+            }
+        } 
+    }
+}

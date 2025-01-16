@@ -1,0 +1,7 @@
+Prod Master/Slave DB Details:-
+UID:- root
+Password:- Passw0rd@!@#
+DB:- prod_db
+ 
+Slave root password
+PassDD@123#@!

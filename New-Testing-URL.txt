@@ -1,0 +1,41 @@
+/var/lib/docker/volumes/d5d7703467722d4196aeed68bf8089a736c6e7ca8da326c57406a4dcc685de21/_data/ubuntu/.pm2
+
+
+pm2.log
+
+
+ln -s /var/lib/docker/volumes/d5d7703467722d4196aeed68bf8089a736c6e7ca8da326c57406a4dcc685de21/_data/ubuntu/.pm2/pm2.log /home/ubuntu
+ /path/to/symlink
+
+
+
+techyhub.co.in
+
+CNAME:- _95fd95fa3e2eec8e17b2e4d155f0ebe1
+Value:- _d368e5d7b7f2bebac8f75c45853a91f2.djqtsrsxkq.acm-validations.aws.
+
+
+
+scp -r -o StrictHostKeyChecking=no -i /var/lib/jenkins/workspace/dd-qa.pem /var/lib/jenkins/workspace/Docker-redis-integeration/redis-integration/target/redis-integration-1.0.0.jar ubuntu@172.31.35.183:/home/ubuntu/latest_build
+
+
+New Links:-
+
+https://fr-qa-1749575234.ap-south-1.elb.amazonaws.com/api/company-service/v1/user/emailCheck?email=zrty@ast.com&primaryIdType=buyer
+
+
+https://fr-qa-1749575234.ap-south-1.elb.amazonaws.com/api/integration/dashboard/query?period=previous_week
+
+https://appnew.techyhub.co.in/
+
+fr-qa-1749575234.ap-south-1.elb.amazonaws.com
+
+
+
+
+https://appnew.techyhub.co.in/api/company-service/v1/user/emailCheck?email=zrty@ast.com&primaryIdType=buyer
+
+https://appnew.techyhub.co.in/api/integration/dashboard/query?period=previous_week
+
+
+-Dcompany.base.url=http://172.31.30.2:8080/api/company-service
